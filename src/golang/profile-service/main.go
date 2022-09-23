@@ -105,7 +105,7 @@ func main() {
 	router.Use(setSpannerConnection(configuration))
 
 	router.POST("/players", createPlayer)
-	router.GET("/players", getPlayerUUIDs)
+	//router.GET("/players", getPlayerUUIDs)
 	router.GET("/players/:id", getPlayerByID)
 	// TODO: Codelab takers should implement getPlayerBylogin function
 	// router.GET("/player/login", getPlayerByLogin)

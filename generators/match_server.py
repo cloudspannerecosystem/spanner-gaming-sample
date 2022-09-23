@@ -36,16 +36,17 @@ class GameMatch(HttpUser):
         # TODO: prepopulate list of exiting open games
         openGames = []
 
-    @task(1)
+    @task(2)
     def createGame(self):
         headers = {"Content-Type": "application/json"}
 
         # Create the game, then store the response in memory of list of open games.
         with self.client.post("/games/create", headers=headers, catch_response=True) as response:
             try:
-                openGames.append({"gameUUID": response.json()})
+                gameUUID = response.json()
+                openGames.append({"gameUUID": gameUUID})
             except json.JSONDecodeError:
-                response.failure("Response could not be decoded as JSON")
+                raise RescheduleTask()
             except KeyError:
                 response.failure("Response did not contain expected key 'gameUUID'")
 
