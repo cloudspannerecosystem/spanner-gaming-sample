@@ -197,7 +197,7 @@ func (g *Game) CreateGame(ctx context.Context, client spanner.Client) error {
 	// Initialize game values
 	g.GameUUID = generateUUID()
 
-	numPlayers := 100
+	numPlayers := 10
 
 	// Create and assign
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {

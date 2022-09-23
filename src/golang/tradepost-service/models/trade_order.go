@@ -83,7 +83,7 @@ func validateSellOrder(pi PlayerItem) bool {
 	return true
 }
 
-// Validate that the order can be fille: Order is active and not expired
+// Validate that the order can be filled: Order is active and not expired
 func validatePurchase(o TradeOrder) bool {
 	// Order is not active
 	if !o.Active {
