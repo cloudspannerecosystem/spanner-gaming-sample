@@ -1,4 +1,4 @@
-module github.com/googlecloudplatform/cloud-spanner-samples/gaming-item-service
+module github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-item-service
 
 go 1.18
 

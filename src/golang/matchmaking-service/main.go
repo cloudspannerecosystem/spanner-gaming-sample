@@ -21,8 +21,8 @@ import (
 
 	spanner "cloud.google.com/go/spanner"
 	"github.com/gin-gonic/gin"
-	"github.com/googlecloudplatform/cloud-spanner-samples/gaming-matchmaking-service/config"
-	"github.com/googlecloudplatform/cloud-spanner-samples/gaming-matchmaking-service/models"
+	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-matchmaking-service/config"
+	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-matchmaking-service/models"
 )
 
 // Mutator to create spanner context and client, and set them in gin

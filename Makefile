@@ -12,7 +12,7 @@ profile-test-integration:
 	cd src/golang/profile-service \
 		&& docker build . -t profile-service \
 		&& mkdir -p test_data \
-		&& cp ../../../schema/players.sql test_data/schema.sql \
+		&& grep -v '^--*' ../../../schema/players.sql >test_data/schema.sql \
 		&& go test --tags=integration ./...
 
 matchmaking:
@@ -28,7 +28,7 @@ matchmaking-test-integration:
 	cd src/golang/matchmaking-service \
 		&& docker build . -t matchmaking-service \
 		&& mkdir -p test_data \
-		&& cp ../../../schema/players.sql test_data/schema.sql \
+		&& grep -v '^--*' ../../../schema/players.sql >test_data/schema.sql \
 		&& go test --tags=integration ./...
 
 item:
@@ -44,9 +44,9 @@ item-test-integration:
 	cd src/golang/item-service \
 		&& docker build . -t item-service \
 		&& mkdir -p test_data \
-		&& cat ../../../schema/players.sql > test_data/schema.sql \
+		&& grep -v '^--*' ../../../schema/players.sql >test_data/schema.sql \
 		&& echo ";" >> test_data/schema.sql \
-		&& cat ../../../schema/trading.sql >> test_data/schema.sql \
+		&& grep -v '^--*' ../../../schema/trading.sql >> test_data/schema.sql \
 		&& go test --tags=integration ./...
 
 tradepost:
@@ -62,9 +62,9 @@ tradepost-test-integration:
 	cd src/golang/tradepost-service \
 		&& mkdir -p test_data \
 		&& docker build . -t tradepost-service \
-		&& cat ../../../schema/players.sql > test_data/schema.sql \
+		&& grep -v '^--*' ../../../schema/players.sql >test_data/schema.sql \
 		&& echo ";" >> test_data/schema.sql \
-		&& cat ../../../schema/trading.sql >> test_data/schema.sql \
+		&& grep -v '^--*' ../../../schema/trading.sql >> test_data/schema.sql \
 		&& go test --tags=integration ./...
 
 test-all-unit: profile-test matchmaking-test item-test tradepost-test

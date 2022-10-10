@@ -26,7 +26,7 @@ import (
 	instance "cloud.google.com/go/spanner/admin/instance/apiv1"
 	"embed"
 	"fmt"
-	"github.com/googlecloudplatform/cloud-spanner-samples/gaming-profile-service/models"
+	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-profile-service/models"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
@@ -237,6 +237,8 @@ func setupService(ctx context.Context, ec *Emulator) (*Service, error) {
 	}, nil
 }
 
+var playerUUIDs []string
+
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
@@ -298,6 +300,15 @@ func TestAddPlayers(t *testing.T) {
 
 		assert.Equal(t, 201, response.StatusCode)
 
+		// Add playerUUID from response to player_slice to be used later
+		var data string
+		body, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		json.Unmarshal(body, &data)
+		playerUUIDs = append(playerUUIDs, data)
+
 		// Test adding same player, should be statuscode 400 since player exists from previous call
 		response, err = http.Post("http://localhost/players", "application/json", bufferJson)
 		assert.Nil(t, err)
@@ -306,22 +317,10 @@ func TestAddPlayers(t *testing.T) {
 }
 
 func TestGetPlayers(t *testing.T) {
-	// Test getting all players
-	response, err := http.Get("http://localhost/players")
-	assert.Nil(t, err)
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	var data []string
-	json.Unmarshal(body, &data)
-	assert.NotEqual(t, 0, len(data))
-
-	// Now for each uuid, get that data and validate response code (assuming the result was not empty)
-	if len(data) != 0 {
-		for _, pUUID := range data {
+	assert.NotNil(t, playerUUIDs)
+	// For each added uuid, get that data and validate response code (assuming the result was not empty)
+	if len(playerUUIDs) != 0 {
+		for _, pUUID := range playerUUIDs {
 			response, err := http.Get(fmt.Sprintf("http://localhost/players/%s", pUUID))
 			if err != nil {
 				t.Fatal(err.Error())

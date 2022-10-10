@@ -1,0 +1,40 @@
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Latest Release
+
+jobs:
+
+  release:
+    name: Create Release
+    runs-on: 'ubuntu-latest'
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.18.4'
+      - name: Set binary name
+        run: |
+          BINARY_NAME=${{github.repository}}-${{github.ref_name}}.tar.gz
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+      - name: Build
+        run: |
+          go build -o "$BINARY_NAME" -v
+          build-all
+          tar -czvf "$BINARY_NAME" README.md generators/README.md generators/*.py bin/*
+      - name: Release Notes
+        run:
+          git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:* %h %s%n  * %an <%ae>' --no-merges >> ".github/RELEASE-TEMPLATE.md"
+      - name: Release with Notes
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: ".github/RELEASE-TEMPLATE.md"
+          draft: true
+          files: ${{env.BINARY_NAME}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
