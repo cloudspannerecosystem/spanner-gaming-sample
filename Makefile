@@ -12,7 +12,7 @@ profile-test-integration:
 	cd src/golang/profile-service \
 		&& docker build . -t profile-service \
 		&& mkdir -p test_data \
-		&& cp ../../../schema/players.sql test_data/schema.sql \
+		&& grep -v '^--*' ../../../schema/players.sql >test_data/schema.sql \
 		&& go test --tags=integration ./...
 
 matchmaking:

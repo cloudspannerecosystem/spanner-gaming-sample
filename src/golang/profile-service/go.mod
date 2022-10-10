@@ -1,4 +1,4 @@
-module github.com/googlecloudplatform/cloud-spanner-samples/gaming-profile-service
+module github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-profile-service
 
 go 1.18
 

@@ -20,8 +20,8 @@ import (
 	"net/http"
 
 	spanner "cloud.google.com/go/spanner"
-	"github.com/googlecloudplatform/cloud-spanner-samples/gaming-profile-service/config"
-	"github.com/googlecloudplatform/cloud-spanner-samples/gaming-profile-service/models"
+	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-profile-service/config"
+	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-profile-service/models"
 
 	"github.com/gin-gonic/gin"
 )
