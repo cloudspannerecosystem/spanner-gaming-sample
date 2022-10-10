@@ -35,19 +35,19 @@ type PlayerStats struct {
 }
 
 type Player struct {
-	PlayerUUID      string `json:"playerUUID" validate:"omitempty,uuid4"`
-	Player_name     string `json:"player_name" validate:"required_with=Password Email"`
-	Email           string `json:"email" validate:"required_with=Player_name Password,email"`
-	Password        string `json:"password" validate:"required_with=Player_name Email"` // not stored in DB
-	Password_hash   []byte `json:"password_hash"`                                       // stored in DB
-	created         time.Time
-	updated         time.Time
+	PlayerUUID      string           `json:"playerUUID" validate:"omitempty,uuid4"`
+	Player_name     string           `json:"player_name" validate:"required_with=Password Email"`
+	Email           string           `json:"email" validate:"required_with=Player_name Password,email"`
+	Password        string           `json:"password" validate:"required_with=Player_name Email"` // not stored in DB
+	Password_hash   []byte           `json:"password_hash"`                                       // stored in DB
+	created         time.Time        //lint:ignore U1000 Field is present to map to database schema
+	updated         time.Time        //lint:ignore U1000 Field is present to map to database schema
 	Stats           spanner.NullJSON `json:"stats"`
 	Account_balance big.Rat          `json:"account_balance"`
-	last_login      time.Time
-	is_logged_in    bool
-	valid_email     bool
-	Current_game    string `json:"current_game" validate:"omitempty,uuid4"`
+	last_login      time.Time        //lint:ignore U1000 Field is present to map to database schema
+	is_logged_in    bool             //lint:ignore U1000 Field is present to map to database schema
+	valid_email     bool             //lint:ignore U1000 Field is present to map to database schema
+	Current_game    string           `json:"current_game" validate:"omitempty,uuid4"`
 }
 
 func init() {
@@ -119,7 +119,7 @@ func (p *Player) AddPlayer(ctx context.Context, client spanner.Client) error {
 	passHash, err := hashPassword(p.Password)
 
 	if err != nil {
-		return errors.New("Unable to hash password")
+		return errors.New("unable to hash password")
 	}
 
 	p.Password_hash = passHash

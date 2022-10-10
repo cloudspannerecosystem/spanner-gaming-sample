@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -49,20 +50,6 @@ func getSpannerConnection(c *gin.Context) (context.Context, spanner.Client) {
 
 }
 
-// TODO: used by authentication server to generate load. Should not be called by other entities,
-//  so restrictions should be implemented
-func getPlayerUUIDs(c *gin.Context) {
-	ctx, client := getSpannerConnection(c)
-
-	players, err := models.GetPlayerUUIDs(ctx, client)
-	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "No players exist"})
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, players)
-}
-
 func getPlayerByID(c *gin.Context) {
 	var playerUUID = c.Param("id")
 
@@ -81,14 +68,18 @@ func createPlayer(c *gin.Context) {
 	var player models.Player
 
 	if err := c.BindJSON(&player); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
 	ctx, client := getSpannerConnection(c)
 	err := player.AddPlayer(ctx, client)
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
@@ -100,15 +91,20 @@ func main() {
 
 	router := gin.Default()
 	// TODO: Better configuration of trusted proxy
-	router.SetTrustedProxies(nil)
+	if err := router.SetTrustedProxies(nil); err != nil {
+		fmt.Printf("could not set trusted proxies: %s", err)
+		return
+	}
 
 	router.Use(setSpannerConnection(configuration))
 
 	router.POST("/players", createPlayer)
-	//router.GET("/players", getPlayerUUIDs)
 	router.GET("/players/:id", getPlayerByID)
 	// TODO: Codelab takers should implement getPlayerBylogin function
 	// router.GET("/player/login", getPlayerByLogin)
 
-	router.Run(configuration.Server.URL())
+	if err := router.Run(configuration.Server.URL()); err != nil {
+		fmt.Printf("could not run gin router: %s", err)
+		return
+	}
 }
