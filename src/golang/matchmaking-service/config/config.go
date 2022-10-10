@@ -69,7 +69,7 @@ func NewConfig() (Config, error) {
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("[WARNING] %s\n", err.Error())
+		fmt.Printf("[WARNING] could not read config %s\n", err.Error())
 	}
 
 	var c Config

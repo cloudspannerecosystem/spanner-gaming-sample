@@ -147,7 +147,7 @@ func (l *PlayerLedger) UpdateBalance(ctx context.Context, client spanner.Client,
 				"source":     l.Source,
 			},
 		}
-		numRows, err = txn.Update(ctx, stmt)
+		_, err = txn.Update(ctx, stmt)
 		if err != nil {
 			return err
 		}
