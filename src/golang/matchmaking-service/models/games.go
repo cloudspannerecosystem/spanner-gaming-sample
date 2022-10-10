@@ -159,7 +159,9 @@ func (g Game) updateGamePlayers(ctx context.Context, players []Player, txn *span
 	for _, p := range players {
 		// Modify stats
 		var pStats PlayerStats
-		json.Unmarshal([]byte(p.Stats.String()), &pStats)
+		if err := json.Unmarshal([]byte(p.Stats.String()), &pStats); err != nil {
+			return fmt.Errorf("could not unmarshal json: %s", err)
+		}
 
 		pStats.Games_played = pStats.Games_played + 1
 
@@ -167,7 +169,9 @@ func (g Game) updateGamePlayers(ctx context.Context, players []Player, txn *span
 			pStats.Games_won = pStats.Games_won + 1
 		}
 		updatedStats, _ := json.Marshal(pStats)
-		p.Stats.UnmarshalJSON(updatedStats)
+		if err := p.Stats.UnmarshalJSON(updatedStats); err != nil {
+			return fmt.Errorf("could not unmarshal json: %s", err)
+		}
 
 		// Update player
 		// If player's current game isn't the same as this game, that's an error
@@ -182,9 +186,13 @@ func (g Game) updateGamePlayers(ctx context.Context, players []Player, txn *span
 			Valid:     false,
 		}
 
-		txn.BufferWrite([]*spanner.Mutation{
+		err := txn.BufferWrite([]*spanner.Mutation{
 			spanner.Update("players", cols, []interface{}{p.PlayerUUID, newGame, p.Stats}),
 		})
+
+		if err != nil {
+			return fmt.Errorf("could not buffer write: %s", err)
+		}
 	}
 
 	return nil
@@ -235,7 +243,9 @@ func (g *Game) CreateGame(ctx context.Context, client spanner.Client) error {
 			m = append(m, spanner.Update("players", pCols, []interface{}{p, g.GameUUID}))
 		}
 
-		txn.BufferWrite(m)
+		if err := txn.BufferWrite(m); err != nil {
+			return fmt.Errorf("could not buffer write: %s", err)
+		}
 
 		return nil
 	})
@@ -288,15 +298,18 @@ func (g *Game) CloseGame(ctx context.Context, client spanner.Client) error {
 			}
 
 			cols := []string{"gameUUID", "finished", "winner"}
-			txn.BufferWrite([]*spanner.Mutation{
+			err = txn.BufferWrite([]*spanner.Mutation{
 				spanner.Update("games", cols, []interface{}{g.GameUUID, time.Now(), g.Winner}),
 			})
 
+			if err != nil {
+				return fmt.Errorf("could not buffer write: %s", err)
+			}
+
 			// Update each player to increment stats.games_played (and stats.games_won if winner),
 			// and set current_game to null so they can be chosen for a new game
-			playerErr := g.updateGamePlayers(ctx, players, txn)
-			if playerErr != nil {
-				return playerErr
+			if err := g.updateGamePlayers(ctx, players, txn); err != nil {
+				return err
 			}
 
 			return nil

@@ -52,11 +52,21 @@ func NewConfig() (Config, error) {
 	viper.SetDefault("server.port", 8081)
 
 	// Bind environment variable override
-	viper.BindEnv("server.host", "SERVICE_HOST")
-	viper.BindEnv("server.port", "SERVICE_PORT")
-	viper.BindEnv("spanner.project_id", "SPANNER_PROJECT_ID")
-	viper.BindEnv("spanner.instance_id", "SPANNER_INSTANCE_ID")
-	viper.BindEnv("spanner.database_id", "SPANNER_DATABASE_ID")
+	if err := viper.BindEnv("server.host", "SERVICE_HOST"); err != nil {
+		return Config{}, fmt.Errorf("could not set environment variable 'server.host': %s", err)
+	}
+	if err := viper.BindEnv("server.port", "SERVICE_PORT"); err != nil {
+		return Config{}, fmt.Errorf("could not set environment variable 'server.port': %s", err)
+	}
+	if err := viper.BindEnv("spanner.project_id", "SPANNER_PROJECT_ID"); err != nil {
+		return Config{}, fmt.Errorf("could not set environment variable 'spanner.project_id': %s", err)
+	}
+	if err := viper.BindEnv("spanner.instance_id", "SPANNER_INSTANCE_ID"); err != nil {
+		return Config{}, fmt.Errorf("could not set environment variable 'spanner.instance_id': %s", err)
+	}
+	if err := viper.BindEnv("spanner.database_id", "SPANNER_DATABASE_ID"); err != nil {
+		return Config{}, fmt.Errorf("could not set environment variable 'spanner.database_id': %s", err)
+	}
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Printf("[WARNING] %s\n", err.Error())
@@ -64,9 +74,8 @@ func NewConfig() (Config, error) {
 
 	var c Config
 
-	err := viper.Unmarshal(&c)
-	if err != nil {
-		fmt.Printf("Unable to decode into struct, %v\n", err)
+	if err := viper.Unmarshal(&c); err != nil {
+		return Config{}, fmt.Errorf("unable to decode into struct, %v", err)
 	}
 
 	return c, nil
