@@ -1,17 +1,14 @@
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 name: Latest Release
 
 jobs:
-
   release:
     name: Create Release
     runs-on: 'ubuntu-latest'
-    needs: test
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
