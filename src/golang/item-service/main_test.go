@@ -29,7 +29,7 @@ import (
 	"embed"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/googlecloudplatform/cloud-spanner-samples/gaming-item-service/models"
+	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-item-service/models"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
