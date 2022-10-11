@@ -12,25 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from locust import HttpUser, task
+"""Emulate creation of new game items"""
 
 import string
 import json
 import random
 import decimal
 
-# Generate random items
+from locust import HttpUser, task
+
 class ItemLoad(HttpUser):
-    def generateItemName(self):
+    """Seed the game with random items using the item-service APIs"""
+
+    def generate_item_name(self):
+        """Generate a random item name, 32-characters long"""
         return ''.join(random.choices(string.ascii_lowercase + string.digits, k=32))
 
-    def generateItemValue(self):
+    def generate_item_value(self):
+        """Generate a random item decimal value, between 1 and 100"""
         return str(decimal.Decimal(random.randrange(100, 10000))/100)
 
     @task
-    def createItem(self):
+    def create_item(self):
+        """Task to create a new game item"""
         headers = {"Content-Type": "application/json"}
-        data = {"item_name": self.generateItemName(), "item_value": self.generateItemValue()}
+        data = {"item_name": self.generate_item_name(), "item_value": self.generate_item_value()}
 
         self.client.post("/items", data=json.dumps(data), headers=headers)
-

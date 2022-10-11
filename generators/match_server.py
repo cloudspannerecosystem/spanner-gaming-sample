@@ -12,65 +12,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from locust import HttpUser, task
-from locust.exception import RescheduleTask
+"""Emulate matchmaking server workload"""
 
 import json
 
-# Generate games
-# A game consists of 100 players. Only 1 winner randomly selected from those players
-#
-# Matchmaking is random list of players that are not playing. This is sufficient for testing
-# purposes, but is too simple for real use-cases. In real scenarios, something like OpenMatch
-# should be used for matchmaking. https://github.com/googleforgames/open-match
-#
-# To achieve this
-# A locust user 'GameMatch' will start off by creating a "game"
-# Then, pre-selecting a subset of users, and set a current_game attribute for those players.
-# Once done, after a period of time, a winner is randomly selected.
+from locust import HttpUser, task
+from locust.exception import RescheduleTask
 
-# Create and close game matches
 class GameMatch(HttpUser):
-    def on_start(self):
-        global openGames
-        # TODO: prepopulate list of exiting open games
-        openGames = []
+    """Create and close games to simulate players joining and finishing games
+    leveraging the matchmaking-service
+    """
+
+    open_games = []
 
     @task(2)
-    def createGame(self):
+    def create_game(self):
+        """Task to create a new game"""
+
         headers = {"Content-Type": "application/json"}
 
         # Create the game, then store the response in memory of list of open games.
         with self.client.post("/games/create", headers=headers, catch_response=True) as response:
             try:
-                gameUUID = response.json()
-                openGames.append({"gameUUID": gameUUID})
-            except json.JSONDecodeError:
-                raise RescheduleTask()
+                game_uuid = response.json()
+                self.open_games.append({"gameUUID": game_uuid})
+            except json.JSONDecodeError as exc:
+                raise RescheduleTask() from exc
             except KeyError:
                 response.failure("Response did not contain expected key 'gameUUID'")
 
     @task(1)
-    def closeGame(self):
+    def close_game(self):
+        """Task to close a previously opened game"""
         # No open games are in memory, reschedule task to run again later.
-        if len(openGames) == 0:
+        if len(self.open_games) == 0:
             raise RescheduleTask()
 
         headers = {"Content-Type": "application/json"}
 
-        # Close the first open game in our list, removing it to avoid contention from concurrent requests
-        game = openGames[0]
-        del openGames[0]
+        # Close the first open game in our list, removing it to avoid contention
+        # from concurrent requests
+        game = self.open_games[0]
+        del self.open_games[0]
 
         data = {"gameUUID": game["gameUUID"]}
         self.client.put("/games/close", data=json.dumps(data), headers=headers)
-        # with self.client.get("/games/open", headers=headers, catch_response=True) as response:
-        #     try:
-        #         data = {"gameUUID": response.json()["gameUUID"]}
-        #         self.client.put("/games/close", data=json.dumps(data), headers=headers)
-        #     except json.JSONDecodeError:
-        #         response.failure("Response could not be decoded as JSON")
-        #     except KeyError:
-        #         response.failure("Response did not contain expected key 'playerUUID'")
-
-

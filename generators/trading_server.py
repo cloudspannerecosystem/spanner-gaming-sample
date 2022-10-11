@@ -12,58 +12,65 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Emulate tradingpost server workload"""
+import json
+
 from locust import HttpUser, task
 from locust.exception import RescheduleTask
 
-import json
-
-# Players can sell and buy items
 class TradeLoad(HttpUser):
-    def itemMarkup(self, value):
-        f = float(value)
-        return str(f*1.5)
+    """Players can sell and buy items leveraging the tradepost-service"""
+
+    def item_markup(self, value):
+        """Return the 150% the value of the item"""
+        float_value = float(value)
+        return str(float_value*1.5)
 
     @task
-    def sellItem(self):
+    def sell_item(self):
+        """Task to sell an item on the trading post"""
+
         headers = {"Content-Type": "application/json"}
 
         # Get a random item
-        with self.client.get("/trades/player_items", headers=headers, catch_response=True) as response:
+        with self.client.get("/trades/player_items", headers=headers,
+                            catch_response=True) as response:
             try:
-                playerUUID = response.json()["PlayerUUID"]
-                playerItemUUID = response.json()["PlayerItemUUID"]
-                list_price = self.itemMarkup(response.json()["Price"])
+                player_uuid = response.json()["PlayerUUID"]
+                player_item_uuid = response.json()["PlayerItemUUID"]
+                list_price = self.item_markup(response.json()["Price"])
 
                 # Currently don't have any items that can be sold, retry
-                if playerItemUUID == "":
+                if player_item_uuid == "":
                     raise RescheduleTask()
 
-                data = {"lister": playerUUID, "playerItemUUID": playerItemUUID, "list_price": list_price}
+                data = {"lister": player_uuid, "playerItemUUID": player_item_uuid,
+                        "list_price": list_price}
                 self.client.post("/trades/sell", data=json.dumps(data), headers=headers)
             except json.JSONDecodeError:
                 response.failure("Response could not be decoded as JSON")
             except KeyError:
-                response.failure("Response did not contain expected key 'playerUUID'")
+                response.failure("Response did not contain expected keys 'PlayerUUID'"
+                                  + "or 'PlayerItemUUID")
 
     @task
-    def buyItem(self):
+    def buy_item(self):
+        """Task to buy an item off the trading post"""
         headers = {"Content-Type": "application/json"}
 
         # Get a random item
         with self.client.get("/trades/open", headers=headers, catch_response=True) as response:
             try:
-                orderUUID = response.json()["OrderUUID"]
-                buyerUUID = response.json()["BuyerUUID"]
+                order_uuid = response.json()["OrderUUID"]
+                buyer_uuid = response.json()["BuyerUUID"]
 
                 # Currently don't have any buyers that can fill the order, retry
-                if buyerUUID == "":
+                if buyer_uuid == "":
                     raise RescheduleTask()
 
-                data = {"orderUUID": orderUUID, "buyer": buyerUUID}
+                data = {"orderUUID": order_uuid, "buyer": buyer_uuid}
                 self.client.put("/trades/buy", data=json.dumps(data), headers=headers)
             except json.JSONDecodeError:
                 response.failure("Response could not be decoded as JSON")
             except KeyError:
                 response.failure("Response did not contain expected key 'OrderUUID' or 'BuyerUUID'")
-
-
