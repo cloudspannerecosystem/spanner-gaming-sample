@@ -17,9 +17,8 @@ jobs:
         with:
           go-version: '^1.18.4'
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@latest
+        uses: golangci/golangci-lint-action@v3
         with:
-          version: latest
           working-directory: ./src/golang/${{matrix.service}}-service
   unit:
     name: Unit tests
