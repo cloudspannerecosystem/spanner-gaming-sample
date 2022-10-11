@@ -3,7 +3,7 @@ name: Microservices code tests
 on:
   pull_request:
     paths:
-      - 'generators/**'
+      - 'src/**'
 jobs:
   lint:
     name: Lint files

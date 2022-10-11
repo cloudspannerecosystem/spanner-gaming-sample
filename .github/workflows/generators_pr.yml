@@ -2,7 +2,7 @@ name: Generator tests
 on:
   pull_request:
     paths:
-      - 'src/**'
+      - 'generators/**'
 jobs:
   lint:
     name: Lint files
