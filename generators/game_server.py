@@ -12,35 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from locust import HttpUser, task
-
+"""Emulate game server workload"""
 import json
 import random
+
+from locust import HttpUser, task
+
 import requests
 
-# Players generate items and money at a 1:2 ratio to ensure they have enough money to buy items later
 class GameLoad(HttpUser):
+    """
+    Leverage the item-service APIs to allow players to generate items and money
+    at a 1:2 ratio to ensure they have enough money to buy items later.
+    """
+    item_uuids = {}
+
     def on_start(self):
-        self.getItems()
+        """When starting load generator, initialize items"""
+        self.get_items()
 
-    def getItems(self):
+    def get_items(self):
+        """Initialize list of items from endpoint"""
         headers = {"Content-Type": "application/json"}
-        r = requests.get(f"{self.host}/items", headers=headers)
+        req = requests.get(f"{self.host}/items", headers=headers, timeout=10)
+        self.item_uuids = json.loads(req.text)
 
-        global itemUUIDs
-        itemUUIDs = json.loads(r.text)
-
-    def generateAmount(self):
+    def generate_amount(self):
+        """Generate a random monetary amount between 1 and 50"""
         return str(round(random.uniform(1.01, 49.99), 2))
 
     @task(2)
-    def acquireMoney(self):
+    def acquire_money(self):
+        """Task for random player to acquire money"""
         headers = {"Content-Type": "application/json"}
 
         # Get a random player that's part of a game, and update balance
         with self.client.get("/players", headers=headers, catch_response=True) as response:
             try:
-                data = {"playerUUID": response.json()["playerUUID"], "amount": self.generateAmount(), "source": "loot"}
+                data = {"playerUUID": response.json()["playerUUID"],
+                        "amount": self.generate_amount(), "source": "loot"}
                 self.client.put("/players/balance", data=json.dumps(data), headers=headers)
             except json.JSONDecodeError:
                 response.failure("Response could not be decoded as JSON")
@@ -48,14 +58,16 @@ class GameLoad(HttpUser):
                 response.failure("Response did not contain expected key 'playerUUID'")
 
     @task(1)
-    def acquireItem(self):
+    def acquire_item(self):
+        """Task for random player to acquire an item"""
         headers = {"Content-Type": "application/json"}
 
         # Get a random player that's part of a game, and add an item
         with self.client.get("/players", headers=headers, catch_response=True) as response:
             try:
-                itemUUID = itemUUIDs[random.randint(0, len(itemUUIDs)-1)]
-                data = {"playerUUID": response.json()["playerUUID"], "itemUUID": itemUUID, "source": "loot"}
+                item_uuid = self.item_uuids[random.randint(0, len(self.item_uuids)-1)]
+                data = {"playerUUID": response.json()["playerUUID"],
+                        "itemUUID": item_uuid, "source": "loot"}
                 self.client.post("/players/items", data=json.dumps(data), headers=headers)
             except json.JSONDecodeError:
                 response.failure("Response could not be decoded as JSON")

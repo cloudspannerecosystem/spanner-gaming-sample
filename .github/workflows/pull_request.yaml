@@ -1,9 +1,9 @@
+
+name: Microservices code tests
 on:
-  push:
-    branches:
-    - main
   pull_request:
-name: Gaming code tests
+    paths:
+      - 'src/**'
 jobs:
   lint:
     name: Lint files

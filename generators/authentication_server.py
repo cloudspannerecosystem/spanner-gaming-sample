@@ -12,52 +12,65 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from locust import HttpUser, task
-from locust.exception import RescheduleTask
+"""Emulate authentication server workload"""
 
 import string
 import json
 import random
 
-# Generate player load with 5:1 reads to write
+from locust import HttpUser, task
+from locust.exception import RescheduleTask
+
 class PlayerLoad(HttpUser):
-    def on_start(self):
-        global pUUIDs
-        pUUIDs = []
+    """
+    Generate player load by adding new users and retrieving those uuids
+    to simulate 5:1 read and write traffic against the profile-service
+    """
 
-    def generatePlayerName(self):
+    # Stores a list of player_uuids that were added during the run to
+    # be used to make requests for player load
+    player_uuids = []
+
+    def generate_player_name(self):
+        """Generate a random player name 32 characters long"""
         return ''.join(random.choices(string.ascii_lowercase + string.digits, k=32))
 
-    def generatePassword(self):
+    def generate_password(self):
+        """Generate a random password 32 characters long"""
         return ''.join(random.choices(string.ascii_lowercase + string.digits, k=32))
 
-    def generateEmail(self):
+    def generate_email(self):
+        """Generate a random email for a subset of domains"""
         return ''.join(random.choices(string.ascii_lowercase + string.digits, k=32) + ['@'] +
             random.choices(['gmail', 'yahoo', 'microsoft']) + ['.com'])
 
     @task
-    def createPlayer(self):
-        headers = {"Content-Type": "application/json"}
-        data = {"player_name": self.generatePlayerName(), "email": self.generateEmail(), "password": self.generatePassword()}
+    def create_player(self):
+        """Task to add a player"""
 
-        with self.client.post("/players", data=json.dumps(data), headers=headers, catch_response=True) as response:
+        headers = {"Content-Type": "application/json"}
+        data = {"player_name": self.generate_player_name(), "email": self.generate_email(),
+                "password": self.generate_password()}
+
+        with self.client.post("/players", data=json.dumps(data), headers=headers,
+                                catch_response=True) as response:
             try:
-                pUUIDs.append(response.json())
+                self.player_uuids.append(response.json())
             except json.JSONDecodeError:
                 response.failure("Response could not be decoded as JSON")
-            except KeyError:
-                response.failure("Response did not contain expected key 'gameUUID'")
 
     @task(5)
-    def getPlayer(self):
+    def get_player(self):
+        """Task to get a player by their uuid"""
+
         # No player UUIDs are in memory, reschedule task to run again later.
-        if len(pUUIDs) == 0:
+        if len(self.player_uuids) == 0:
             raise RescheduleTask()
 
         # Get first player in our list, removing it to avoid contention from concurrent requests
-        pUUID = pUUIDs[0]
-        del pUUIDs[0]
+        player_uuid = self.player_uuids[0]
+        del self.player_uuids[0]
 
         headers = {"Content-Type": "application/json"}
 
-        self.client.get(f"/players/{pUUID}", headers=headers, name="/players/[playerUUID]")
+        self.client.get(f"/players/{player_uuid}", headers=headers, name="/players/[playerUUID]")
