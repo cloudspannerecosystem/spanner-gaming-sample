@@ -20,7 +20,7 @@ jobs:
         uses: golangci/golangci-lint-action@latest
         with:
           version: latest
-        working-directory: ./src/golang/${{matrix.service}}-service
+          working-directory: ./src/golang/${{matrix.service}}-service
   unit:
     name: Unit tests
     runs-on: ubuntu-latest
