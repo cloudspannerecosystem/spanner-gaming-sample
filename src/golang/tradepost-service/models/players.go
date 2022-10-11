@@ -108,10 +108,15 @@ func (p *Player) UpdateBalance(ctx context.Context, txn *spanner.ReadWriteTransa
 	// This modifies player's AccountBalance, which is used to update the player entry
 	p.AccountBalance.Add(&p.AccountBalance, &newAmount)
 
-	txn.BufferWrite([]*spanner.Mutation{
+	err := txn.BufferWrite([]*spanner.Mutation{
 		spanner.Update("players", []string{"playerUUID", "account_balance"}, []interface{}{p.PlayerUUID, p.AccountBalance}),
 		spanner.Insert("player_ledger_entries", []string{"playerUUID", "amount", "game_session", "source", "entryDate"},
 			[]interface{}{p.PlayerUUID, newAmount, p.CurrentGame, "tradepost", spanner.CommitTimestamp}),
 	})
+
+	if err != nil {
+		return fmt.Errorf("could not buffer write: %s", err)
+	}
+
 	return nil
 }
