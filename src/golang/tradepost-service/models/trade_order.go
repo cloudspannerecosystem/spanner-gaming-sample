@@ -46,27 +46,6 @@ func generateUUID() string {
 	return uuid.NewString()
 }
 
-// Helper function to read rows from Spanner.
-func readRows(iter *spanner.RowIterator) ([]spanner.Row, error) {
-	var rows []spanner.Row
-	defer iter.Stop()
-
-	for {
-		row, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		rows = append(rows, *row)
-	}
-
-	return rows, nil
-}
-
 // Validate that the order can be placed: Item is visible and not expired
 func validateSellOrder(pi PlayerItem) bool {
 	// Item is not visible, can't be listed
@@ -190,7 +169,10 @@ func (o *TradeOrder) Create(ctx context.Context, client spanner.Client) error {
 		cols = []string{"playerUUID", "playerItemUUID", "visible"}
 		m = append(m, spanner.Update("player_items", cols, []interface{}{o.Lister, o.PlayerItemUUID, false}))
 
-		txn.BufferWrite(m)
+		if err := txn.BufferWrite(m); err != nil {
+			return fmt.Errorf("could not buffer write: %s", err)
+		}
+
 		return nil
 	})
 
@@ -207,8 +189,7 @@ func (o *TradeOrder) Buy(ctx context.Context, client spanner.Client) error {
 	// Fulfil the order
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		// Get Order information
-		err := o.getOrderDetails(ctx, txn)
-		if err != nil {
+		if err := o.getOrderDetails(ctx, txn); err != nil {
 			return err
 		}
 
@@ -220,8 +201,7 @@ func (o *TradeOrder) Buy(ctx context.Context, client spanner.Client) error {
 
 		// Validate buyer has the money
 		buyer := Player{PlayerUUID: o.Buyer}
-		err = buyer.GetBalance(ctx, txn)
-		if err != nil {
+		if err := buyer.GetBalance(ctx, txn); err != nil {
 			return err
 		}
 
@@ -233,17 +213,20 @@ func (o *TradeOrder) Buy(ctx context.Context, client spanner.Client) error {
 		// Move money from buyer to seller (which includes ledger entries)
 		var m []*spanner.Mutation
 		lister := Player{PlayerUUID: o.Lister}
-		err = lister.GetBalance(ctx, txn)
-		if err != nil {
+		if err := lister.GetBalance(ctx, txn); err != nil {
 			return err
 		}
 
 		// Update seller's account balance
-		lister.UpdateBalance(ctx, txn, o.ListPrice)
+		if err := lister.UpdateBalance(ctx, txn, o.ListPrice); err != nil {
+			return err
+		}
 
 		// Update buyer's account balance
 		negAmount := o.ListPrice.Neg(&o.ListPrice)
-		buyer.UpdateBalance(ctx, txn, *negAmount)
+		if err := buyer.UpdateBalance(ctx, txn, *negAmount); err != nil {
+			return err
+		}
 
 		// Move item from seller to buyer, mark item as visible.
 		pi, err := GetPlayerItem(ctx, txn, o.Lister, o.PlayerItemUUID)
@@ -253,13 +236,18 @@ func (o *TradeOrder) Buy(ctx context.Context, client spanner.Client) error {
 		pi.GameSession = buyer.CurrentGame
 
 		// Moves the item from lister (current pi.PlayerUUID) to buyer
-		pi.MoveItem(ctx, txn, o.Buyer)
+		if err := pi.MoveItem(ctx, txn, o.Buyer); err != nil {
+			return err
+		}
 
 		// Update order information
 		cols := []string{"orderUUID", "active", "filled", "buyer", "ended"}
 		m = append(m, spanner.Update("trade_orders", cols, []interface{}{o.OrderUUID, false, true, o.Buyer, time.Now()}))
 
-		txn.BufferWrite(m)
+		if err := txn.BufferWrite(m); err != nil {
+			return fmt.Errorf("could not buffer write: %s", err)
+		}
+
 		return nil
 	})
 

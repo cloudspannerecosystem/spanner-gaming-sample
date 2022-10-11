@@ -16,13 +16,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 
 	spanner "cloud.google.com/go/spanner"
-	"github.com/gin-gonic/gin"
 	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-tradepost-service/config"
 	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-tradepost-service/models"
+	"github.com/gin-gonic/gin"
 )
 
 // Mutator to create spanner context and client, and set them in gin
@@ -102,14 +103,17 @@ func createOrder(c *gin.Context) {
 	var order models.TradeOrder
 
 	if err := c.BindJSON(&order); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
 	ctx, client := getSpannerConnection(c)
-	err := order.Create(ctx, client)
-	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+	if err := order.Create(ctx, client); err != nil {
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
@@ -120,14 +124,17 @@ func purchaseOrder(c *gin.Context) {
 	var order models.TradeOrder
 
 	if err := c.BindJSON(&order); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
 	ctx, client := getSpannerConnection(c)
-	err := order.Buy(ctx, client)
-	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+	if err := order.Buy(ctx, client); err != nil {
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
@@ -139,7 +146,10 @@ func main() {
 
 	router := gin.Default()
 	// TODO: Better configuration of trusted proxy
-	router.SetTrustedProxies(nil)
+	if err := router.SetTrustedProxies(nil); err != nil {
+		fmt.Printf("could not set trusted proxies: %s", err)
+		return
+	}
 
 	router.Use(setSpannerConnection(configuration))
 
@@ -148,5 +158,8 @@ func main() {
 	router.GET("/trades/open", getOpenOrder)
 	router.PUT("/trades/buy", purchaseOrder)
 
-	router.Run(configuration.Server.URL())
+	if err := router.Run(configuration.Server.URL()); err != nil {
+		fmt.Printf("could not run gin router: %s", err)
+		return
+	}
 }

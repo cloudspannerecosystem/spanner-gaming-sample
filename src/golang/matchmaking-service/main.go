@@ -16,13 +16,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 
 	spanner "cloud.google.com/go/spanner"
-	"github.com/gin-gonic/gin"
 	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-matchmaking-service/config"
 	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-matchmaking-service/models"
+	"github.com/gin-gonic/gin"
 )
 
 // Mutator to create spanner context and client, and set them in gin
@@ -54,7 +55,9 @@ func createGame(c *gin.Context) {
 	ctx, client := getSpannerConnection(c)
 	err := game.CreateGame(ctx, client)
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
@@ -65,14 +68,17 @@ func closeGame(c *gin.Context) {
 	var game models.Game
 
 	if err := c.BindJSON(&game); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
 	ctx, client := getSpannerConnection(c)
-	err := game.CloseGame(ctx, client)
-	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+	if err := game.CloseGame(ctx, client); err != nil {
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
@@ -83,7 +89,9 @@ func getOpenGame(c *gin.Context) {
 	ctx, client := getSpannerConnection(c)
 	game, err := models.GetOpenGame(ctx, client)
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
@@ -95,7 +103,10 @@ func main() {
 
 	router := gin.Default()
 	// TODO: Better configuration of trusted proxy
-	router.SetTrustedProxies(nil)
+	if err := router.SetTrustedProxies(nil); err != nil {
+		fmt.Printf("could not set trusted proxies: %s", err)
+		return
+	}
 
 	router.Use(setSpannerConnection(configuration))
 
@@ -103,5 +114,8 @@ func main() {
 	router.POST("/games/create", createGame)
 	router.PUT("/games/close", closeGame)
 
-	router.Run(configuration.Server.URL())
+	if err := router.Run(configuration.Server.URL()); err != nil {
+		fmt.Printf("could not run gin router: %s", err)
+		return
+	}
 }

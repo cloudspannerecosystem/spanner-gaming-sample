@@ -16,14 +16,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	spanner "cloud.google.com/go/spanner"
-	"github.com/gin-gonic/gin"
 	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-item-service/config"
 	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-item-service/models"
+	"github.com/gin-gonic/gin"
 )
 
 // Mutator to create spanner context and client, and set them in gin
@@ -52,14 +53,17 @@ func createItem(c *gin.Context) {
 	var item models.GameItem
 
 	if err := c.BindJSON(&item); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
 	ctx, client := getSpannerConnection(c)
-	err := item.Create(ctx, client)
-	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+	if err := item.Create(ctx, client); err != nil {
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
@@ -109,14 +113,17 @@ func updatePlayerBalance(c *gin.Context) {
 	var ledger models.PlayerLedger
 
 	if err := c.BindJSON(&ledger); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
 	ctx, client := getSpannerConnection(c)
-	err := ledger.UpdateBalance(ctx, client, &player)
-	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+	if err := ledger.UpdateBalance(ctx, client, &player); err != nil {
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
@@ -132,7 +139,9 @@ func getPlayer(c *gin.Context) {
 	ctx, client := getSpannerConnection(c)
 	player, err := models.GetPlayer(ctx, client)
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
@@ -143,14 +152,17 @@ func addPlayerItem(c *gin.Context) {
 	var playerItem models.PlayerItem
 
 	if err := c.BindJSON(&playerItem); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
 	ctx, client := getSpannerConnection(c)
-	err := playerItem.Add(ctx, client)
-	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+	if err := playerItem.Add(ctx, client); err != nil {
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
 		return
 	}
 
@@ -162,7 +174,10 @@ func main() {
 
 	router := gin.Default()
 	// TODO: Better configuration of trusted proxy
-	router.SetTrustedProxies(nil)
+	if err := router.SetTrustedProxies(nil); err != nil {
+		fmt.Printf("could not set trusted proxies: %s", err)
+		return
+	}
 
 	router.Use(setSpannerConnection(configuration))
 
@@ -173,5 +188,8 @@ func main() {
 	router.GET("/players", getPlayer)
 	router.POST("/players/items", addPlayerItem)
 
-	router.Run(configuration.Server.URL())
+	if err := router.Run(configuration.Server.URL()); err != nil {
+		fmt.Printf("could not run gin router: %s", err)
+		return
+	}
 }

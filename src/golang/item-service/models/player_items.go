@@ -16,6 +16,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -62,10 +63,14 @@ func (pi *PlayerItem) Add(ctx context.Context, client spanner.Client) error {
 		// Insert
 		cols := []string{"playerItemUUID", "playerUUID", "itemUUID", "price", "source", "game_session"}
 
-		txn.BufferWrite([]*spanner.Mutation{
+		err = txn.BufferWrite([]*spanner.Mutation{
 			spanner.Insert("player_items", cols,
 				[]interface{}{pi.PlayerItemUUID, pi.PlayerUUID, pi.ItemUUID, pi.Price, pi.Source, pi.Game_session}),
 		})
+
+		if err != nil {
+			return fmt.Errorf("could not buffer write: %s", err)
+		}
 
 		return nil
 	})
