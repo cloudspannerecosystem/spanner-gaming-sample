@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package models interacts with the backend database to handle the stateful
+// data for the tradepost service.
+//
+// Provides models for trade_order, players, player_items, and game_items
 package models
 
 import (
@@ -26,6 +30,7 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// TradeOrder provides information about a trade order
 type TradeOrder struct {
 	OrderUUID      string           `json:"orderUUID" binding:"omitempty,uuid4"`
 	Lister         string           `json:"lister" binding:"omitempty,uuid4"`
@@ -42,11 +47,12 @@ type TradeOrder struct {
 	Expired        bool             `json:"expired"`
 }
 
+// generateUUID is a private helper to create and returns a v4 UUID string.
 func generateUUID() string {
 	return uuid.NewString()
 }
 
-// Validate that the order can be placed: Item is visible and not expired
+// validateSellOrder ensures that the order can be placed: Item is visible and not expired
 func validateSellOrder(pi PlayerItem) bool {
 	// Item is not visible, can't be listed
 	if !pi.Visible {
@@ -62,7 +68,7 @@ func validateSellOrder(pi PlayerItem) bool {
 	return true
 }
 
-// Validate that the order can be filled: Order is active and not expired
+// validatePurchase ensures that the order can be filled: Order is active and not expired
 func validatePurchase(o TradeOrder) bool {
 	// Order is not active
 	if !o.Active {
@@ -78,7 +84,7 @@ func validatePurchase(o TradeOrder) bool {
 	return true
 }
 
-// Validate that a buyer can buy this item.
+// validateBuyer ensures that a buyer can buy this item: not the lister and has enough money
 func validateBuyer(b Player, o TradeOrder) bool {
 	// Lister can't be the same as buyer
 	if b.PlayerUUID == o.Lister {
@@ -93,6 +99,7 @@ func validateBuyer(b Player, o TradeOrder) bool {
 	return true
 }
 
+// getOrderDetails returns information about a trade order
 func (o *TradeOrder) getOrderDetails(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 	row, err := txn.ReadRow(ctx, "trade_orders", spanner.Key{o.OrderUUID}, []string{"lister", "playerItemUUID", "active", "expires", "list_price"})
 	if err != nil {
@@ -107,7 +114,7 @@ func (o *TradeOrder) getOrderDetails(ctx context.Context, txn *spanner.ReadWrite
 	return nil
 }
 
-// Retrieve an order that can be filled
+// GetRandomOpenOrder returns an open order that can be bought
 func GetRandomOpenOrder(ctx context.Context, client spanner.Client) (TradeOrder, error) {
 	var order TradeOrder
 
@@ -134,7 +141,7 @@ func GetRandomOpenOrder(ctx context.Context, client spanner.Client) (TradeOrder,
 	return order, nil
 }
 
-// Create a trade order for an item.
+// Create adds a new trade order for an item.
 func (o *TradeOrder) Create(ctx context.Context, client spanner.Client) error {
 	// insert into spanner
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
@@ -184,7 +191,9 @@ func (o *TradeOrder) Create(ctx context.Context, client spanner.Client) error {
 	return nil
 }
 
-// Buy an order
+// Buy closes an open sell order and completes the transaction
+// Completing the transaction includes adding the player_item to the buyer, and subtracting
+// the trade price from the buyer's account and adding it to the seller's account
 func (o *TradeOrder) Buy(ctx context.Context, client spanner.Client) error {
 	// Fulfil the order
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {

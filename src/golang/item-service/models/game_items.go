@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package models interacts with the backend database to handle the stateful
+// data for the item service.
+//
+// Provides models for game_items, players and player_items
 package models
 
 import (
@@ -24,6 +28,7 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// GameItem represents information about a game_item
 type GameItem struct {
 	ItemUUID       string    `json:"itemUUID"`
 	Item_name      string    `json:"item_name"`
@@ -32,11 +37,12 @@ type GameItem struct {
 	Duration       int64     `json:"duration"`
 }
 
+// generateUUID is a private helper to create and returns a v4 UUID string.
 func generateUUID() string {
 	return uuid.NewString()
 }
 
-// Helper function to read rows from Spanner.
+// readRows is a helper function to read rows from Spanner.
 func readRows(iter *spanner.RowIterator) ([]spanner.Row, error) {
 	var rows []spanner.Row
 	defer iter.Stop()
@@ -57,8 +63,8 @@ func readRows(iter *spanner.RowIterator) ([]spanner.Row, error) {
 	return rows, nil
 }
 
-// Get list of item UUIDs
-// TODO: Currently limits to 10k by default.
+// GetItemUUIDs returns a list of item UUIDs
+// TODO: Currently limits to 10k by default, but this should be configurable.
 func GetItemUUIDs(ctx context.Context, client spanner.Client) ([]string, error) {
 	ro := client.ReadOnlyTransaction()
 	stmt := spanner.Statement{SQL: `SELECT itemUUID FROM game_items LIMIT 10000`}
@@ -84,7 +90,7 @@ func GetItemUUIDs(ctx context.Context, client spanner.Client) ([]string, error) 
 	return itemUUIDs, nil
 }
 
-// Retrieve an item price
+// GetItemPrice returns an item's price when provided a valid item uuid
 func GetItemPrice(ctx context.Context, txn *spanner.ReadWriteTransaction, itemUUID string) (big.Rat, error) {
 	var price big.Rat
 
@@ -101,6 +107,8 @@ func GetItemPrice(ctx context.Context, txn *spanner.ReadWriteTransaction, itemUU
 	return price, nil
 }
 
+// Create adds a new game_item to the database
+// A game_item uuid is generated, and the available_time is set if none is provided
 func (i *GameItem) Create(ctx context.Context, client spanner.Client) error {
 	// Initialize item values
 	i.ItemUUID = generateUUID()
@@ -136,6 +144,7 @@ func (i *GameItem) Create(ctx context.Context, client spanner.Client) error {
 	return nil
 }
 
+// GetItemByUUID returns information about an item when provided a valid game_item UUID
 func GetItemByUUID(ctx context.Context, client spanner.Client, itemUUID string) (GameItem, error) {
 	row, err := client.Single().ReadRow(ctx, "game_items",
 		spanner.Key{itemUUID}, []string{"itemUUID", "item_name", "item_value", "available_time", "duration"})

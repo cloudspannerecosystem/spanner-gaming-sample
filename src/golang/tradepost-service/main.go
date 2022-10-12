@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main exposes the REST endpoints for the tradepost-service.
 package main
 
 import (
@@ -26,7 +27,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Mutator to create spanner context and client, and set them in gin
+// setSpannerConnection is a mutator to create spanner context and client, and set them in gin
 func setSpannerConnection(c config.Config) gin.HandlerFunc {
 	ctx := context.Background()
 	client, err := spanner.NewClient(ctx, c.Spanner.DB())
@@ -42,12 +43,14 @@ func setSpannerConnection(c config.Config) gin.HandlerFunc {
 	}
 }
 
-// Helper function to retrieve spanner client and context
+// getSpannerConnection is a helper function to retrieve spanner client and context
 func getSpannerConnection(c *gin.Context) (context.Context, spanner.Client) {
 	return c.MustGet("spanner_context").(context.Context),
 		c.MustGet("spanner_client").(spanner.Client)
 }
 
+// getPlayerItem responds to the GET /trades/player_items endpoint
+// Returns information about a random item that can be listed
 func getPlayerItem(c *gin.Context) {
 	ctx, client := getSpannerConnection(c)
 
@@ -66,7 +69,8 @@ func getPlayerItem(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, ri)
 }
 
-// Get a random open order with a random buyer. Used in trade simulation
+// getOpenOrder responds to the GET /trades/open
+// Returns a random open order with a random buyer. Used in trade simulation
 func getOpenOrder(c *gin.Context) {
 	ctx, client := getSpannerConnection(c)
 
@@ -98,7 +102,8 @@ func getOpenOrder(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, ro)
 }
 
-// Create a sell order
+// createOrder responds to the POST /trades/sell endpoint
+// Creates a sell order and returns information about the created order
 func createOrder(c *gin.Context) {
 	var order models.TradeOrder
 
@@ -120,6 +125,8 @@ func createOrder(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, order.OrderUUID)
 }
 
+// purchaseOrder responds to the PUT /trades/buy endpoint
+// Closes out a trade order as 'buy' and updates item and account balance information
 func purchaseOrder(c *gin.Context) {
 	var order models.TradeOrder
 
@@ -141,6 +148,7 @@ func purchaseOrder(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, order.OrderUUID)
 }
 
+// main initializes the gin router and configures the endpoints
 func main() {
 	configuration, _ := config.NewConfig()
 

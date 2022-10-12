@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package config provides configuration for the item service.
+//
+// Configuration can be handled via through environment variables or
+// via a config.yml file. Several defaults are set.
+// The order of setting is config.yml < environment variables < defaults.
 package config
 
 import (
@@ -20,19 +25,19 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Configurations exported
+// Config contains all of the available configurations for the item service
 type Config struct {
 	Server  ServerConfig
 	Spanner SpannerConfig
 }
 
-// ServerConfigurations exported
+// ServerConfig contains the information to expose the item service as a server
 type ServerConfig struct {
 	Host string
 	Port int
 }
 
-// DatabaseConfigurations exported
+// SpannerConfig contains information to connect to a Cloud Spanner database
 type SpannerConfig struct {
 	Project_id      string `mapstructure:"PROJECT_ID" yaml:"project_id,omitempty"`
 	Instance_id     string `mapstructure:"INSTANCE_ID" yaml:"instance_id,omitempty"`
@@ -40,6 +45,8 @@ type SpannerConfig struct {
 	CredentialsFile string `mapstructure:"CREDENTIALS_FILE" yaml:"credentials_file,omitempty"`
 }
 
+// NewConfig initializes the configuration with default values and binds
+// environment variables and reads from any supplied config.yml file
 func NewConfig() (Config, error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
@@ -79,6 +86,7 @@ func NewConfig() (Config, error) {
 	return c, nil
 }
 
+// DB returns the formatted endpoint string for a Spanner database
 func (c *SpannerConfig) DB() string {
 	return fmt.Sprintf(
 		"projects/%s/instances/%s/databases/%s",
@@ -88,6 +96,7 @@ func (c *SpannerConfig) DB() string {
 	)
 }
 
+// URL returns the formatted endpoint string in format 'host:port'
 func (c *ServerConfig) URL() string {
 	return fmt.Sprintf(
 		"%s:%d",

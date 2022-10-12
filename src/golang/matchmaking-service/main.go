@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main exposes the REST endpoints for the matchmaking-service.
 package main
 
 import (
@@ -26,7 +27,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Mutator to create spanner context and client, and set them in gin
+// setSpannerConnection is a mutator to create spanner context and client, and set them in gin
 func setSpannerConnection(c config.Config) gin.HandlerFunc {
 	ctx := context.Background()
 	client, err := spanner.NewClient(ctx, c.Spanner.DB())
@@ -42,12 +43,13 @@ func setSpannerConnection(c config.Config) gin.HandlerFunc {
 	}
 }
 
-// Helper function to retrieve spanner client and context
+// getSpannerConnection is a helper function to retrieve spanner client and context
 func getSpannerConnection(c *gin.Context) (context.Context, spanner.Client) {
 	return c.MustGet("spanner_context").(context.Context),
 		c.MustGet("spanner_client").(spanner.Client)
 }
 
+// createGame responds to the POST /games/create endpoint
 // Creating a game assigns a list of players not currently playing a game
 func createGame(c *gin.Context) {
 	var game models.Game
@@ -64,6 +66,8 @@ func createGame(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, game.GameUUID)
 }
 
+// closeGame responds to the PUT /games/close endpoint
+// Closing a game selects a winner and updates the players' stats before setting the game's finish time.
 func closeGame(c *gin.Context) {
 	var game models.Game
 
@@ -85,6 +89,8 @@ func closeGame(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, game.Winner)
 }
 
+// getOpenGame responds to the GET /games/open endpoint
+// Retrieving a game returns the game's UUID as a response
 func getOpenGame(c *gin.Context) {
 	ctx, client := getSpannerConnection(c)
 	game, err := models.GetOpenGame(ctx, client)
@@ -98,6 +104,7 @@ func getOpenGame(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, game)
 }
 
+// main initializes the gin router and configures the endpoints
 func main() {
 	configuration, _ := config.NewConfig()
 

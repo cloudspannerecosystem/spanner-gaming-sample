@@ -16,11 +16,13 @@ package models
 
 import spanner "cloud.google.com/go/spanner"
 
+// PlayerStats provides various statistics for a player
 type PlayerStats struct {
 	Games_played int `json:"games_played"`
 	Games_won    int `json:"games_won"`
 }
 
+// Player maps to the fields required by a game's players
 type Player struct {
 	PlayerUUID   string           `json:"playerUUID"`
 	Stats        spanner.NullJSON `json:"stats"`
