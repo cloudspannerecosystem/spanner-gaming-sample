@@ -22,6 +22,7 @@ import (
 	"cloud.google.com/go/spanner"
 )
 
+// GameItem represents information about a game item
 type GameItem struct {
 	ItemUUID      string    `json:"itemUUID"`
 	ItemName      string    `json:"item_name"`
@@ -30,7 +31,7 @@ type GameItem struct {
 	Duration      int64     `json:"duration"`
 }
 
-// Retrieve an item price
+// GetItemPrice returns an item's current price
 func GetItemPrice(ctx context.Context, txn *spanner.ReadWriteTransaction, itemUUID string) (big.Rat, error) {
 	var price big.Rat
 
@@ -47,6 +48,7 @@ func GetItemPrice(ctx context.Context, txn *spanner.ReadWriteTransaction, itemUU
 	return price, nil
 }
 
+// GetItemByUUID returns an item when provided a valid itemUUID
 func GetItemByUUID(ctx context.Context, client spanner.Client, itemUUID string) (GameItem, error) {
 	row, err := client.Single().ReadRow(ctx, "game_items",
 		spanner.Key{itemUUID}, []string{"item_name", "item_value", "available_time", "duration"})

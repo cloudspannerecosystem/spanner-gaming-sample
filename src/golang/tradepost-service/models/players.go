@@ -25,6 +25,7 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// Player represents information about a player relevant to a trade order
 type Player struct {
 	PlayerUUID     string    `json:"playerUUID" binding:"required,uuid4"`
 	Updated        time.Time `json:"updated"`
@@ -32,6 +33,7 @@ type Player struct {
 	CurrentGame    string    `json:"current_game" binding:"omitempty,uuid4" spanner:"current_game"`
 }
 
+// PlayerLedger represents information about a player_ledger entry
 type PlayerLedger struct {
 	PlayerUUID  string  `json:"playerUUID" binding:"required,uuid4"`
 	Amount      big.Rat `json:"amount"`
@@ -39,7 +41,7 @@ type PlayerLedger struct {
 	Source      string  `json:"source"`
 }
 
-// Get a player's game session
+// GetPlayerSession returns a player's current game session
 func GetPlayerSession(ctx context.Context, txn *spanner.ReadWriteTransaction, playerUUID string) (string, error) {
 	var session string
 
@@ -62,7 +64,8 @@ func GetPlayerSession(ctx context.Context, txn *spanner.ReadWriteTransaction, pl
 	return session, nil
 }
 
-// Retrieve a player of an open game. We only care about the Current_game and playerUUID attributes.
+// GetRandomPlayer returns a player of an open game.
+// We only care about the Current_game and playerUUID attributes.
 func GetRandomPlayer(ctx context.Context, client spanner.Client, excludePlayerUUID string, minBalance big.Rat) (Player, error) {
 	var p Player
 
@@ -89,6 +92,7 @@ func GetRandomPlayer(ctx context.Context, client spanner.Client, excludePlayerUU
 	return p, nil
 }
 
+// GetBalance returns a player's account balance
 func (p *Player) GetBalance(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 	row, err := txn.ReadRow(ctx, "players", spanner.Key{p.PlayerUUID}, []string{"account_balance", "current_game"})
 	if err != nil {
@@ -103,7 +107,7 @@ func (p *Player) GetBalance(ctx context.Context, txn *spanner.ReadWriteTransacti
 	return nil
 }
 
-// Update a player's balance, and add an entry into the player ledger
+// UpdateBalance updates a player's balance, and adds an entry into the player ledger
 func (p *Player) UpdateBalance(ctx context.Context, txn *spanner.ReadWriteTransaction, newAmount big.Rat) error {
 	// This modifies player's AccountBalance, which is used to update the player entry
 	p.AccountBalance.Add(&p.AccountBalance, &newAmount)

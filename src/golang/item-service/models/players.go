@@ -25,6 +25,7 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// Player represents information about a player that is required by the item service
 type Player struct {
 	PlayerUUID      string    `json:"playerUUID" binding:"required,uuid4"`
 	Updated         time.Time `json:"updated"`
@@ -32,6 +33,7 @@ type Player struct {
 	Current_game    string    `json:"current_game"`
 }
 
+// PlayerLedger represents information about a player ledger entry
 type PlayerLedger struct {
 	PlayerUUID   string  `json:"playerUUID" binding:"required,uuid4"`
 	Amount       big.Rat `json:"amount"`
@@ -39,7 +41,7 @@ type PlayerLedger struct {
 	Source       string  `json:"source"`
 }
 
-// Get a player's game session
+// GetPlayerSession returns the provided player's game session
 func GetPlayerSession(ctx context.Context, txn *spanner.ReadWriteTransaction, playerUUID string) (string, error) {
 	var session string
 
@@ -62,7 +64,8 @@ func GetPlayerSession(ctx context.Context, txn *spanner.ReadWriteTransaction, pl
 	return session, nil
 }
 
-// Retrieve a player of an open game. We only care about the Current_game and playerUUID attributes.
+// GetPlayer returns a player of an open game.
+// We only care about the Current_game and playerUUID attributes.
 func GetPlayer(ctx context.Context, client spanner.Client) (Player, error) {
 	var p Player
 
@@ -87,6 +90,8 @@ func GetPlayer(ctx context.Context, client spanner.Client) (Player, error) {
 	return p, nil
 }
 
+// UpdateBalance records a modification to a player's balance and updates that balance
+// TODO: fix code to update a player's balance, not a ledger balance
 func (l *PlayerLedger) UpdateBalance(ctx context.Context, client spanner.Client, p *Player) error {
 	// Update balance with new amount
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {

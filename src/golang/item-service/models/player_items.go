@@ -23,6 +23,7 @@ import (
 	"cloud.google.com/go/spanner"
 )
 
+// PlayerItem represents information about a player's item
 type PlayerItem struct {
 	PlayerItemUUID string           `json:"playerItemUUID" binding:"omitempty,uuid4"`
 	PlayerUUID     string           `json:"playerUUID" binding:"required,uuid4"`
@@ -35,9 +36,9 @@ type PlayerItem struct {
 	Visible        bool             `json:"visible"`
 }
 
-// Function adds an item to a player. Stores the item's value as price at the time
-// it was acquired. This allows item prices to change over time without impacting
-// prices of previously acquired items.
+// Add an item to a player.
+// Stores the item's value as price at the time it was acquired.
+// This allows item prices to change over time without impacting prices of previously acquired items.
 func (pi *PlayerItem) Add(ctx context.Context, client spanner.Client) error {
 	// insert into spanner
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {

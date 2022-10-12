@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main exposes the REST endpoints for the item-service.
 package main
 
 import (
@@ -27,7 +28,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Mutator to create spanner context and client, and set them in gin
+// setSpannerConnection is a mutator to create spanner context and client, and set them in gin
 func setSpannerConnection(c config.Config) gin.HandlerFunc {
 	ctx := context.Background()
 	client, err := spanner.NewClient(ctx, c.Spanner.DB())
@@ -43,12 +44,14 @@ func setSpannerConnection(c config.Config) gin.HandlerFunc {
 	}
 }
 
-// Helper function to retrieve spanner client and context
+// getSpannerConnection is a helper function to retrieve spanner client and context
 func getSpannerConnection(c *gin.Context) (context.Context, spanner.Client) {
 	return c.MustGet("spanner_context").(context.Context),
 		c.MustGet("spanner_client").(spanner.Client)
 }
 
+// createItem responds to the POST /items endpoint
+// Creates a new game_item and returns the information as a response
 func createItem(c *gin.Context) {
 	var item models.GameItem
 
@@ -70,6 +73,8 @@ func createItem(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, item.ItemUUID)
 }
 
+// getItemUUIDs responds to the GET /items endpoint
+// Returns an unfiltered list of game_item UUIDs.
 // TODO: used by game server to generate load. Should not be called by other entities,
 //  so restrictions should be implemented
 func getItemUUIDs(c *gin.Context) {
@@ -84,6 +89,8 @@ func getItemUUIDs(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, items)
 }
 
+// getItem responds to the GET /items/:id endpoint
+// Returns information about a specific game_item when provided a valid itemUUID
 func getItem(c *gin.Context) {
 	var itemUUID = c.Param("id")
 
@@ -107,7 +114,9 @@ func getItem(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gi)
 }
 
+// updatePlayerBalance responds to the PUT /players/balance endpoint
 // Update a player balance with a provided amount. Result is a JSON object that contains PlayerUUID and AccountBalance
+// TODO: fix code to update a player's balance, not a ledger balance
 func updatePlayerBalance(c *gin.Context) {
 	var player models.Player
 	var ledger models.PlayerLedger
@@ -135,6 +144,8 @@ func updatePlayerBalance(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, balance)
 }
 
+// getPlayer responds to the GET /players endpoint
+// Returns information about a random player that is currently playing a game
 func getPlayer(c *gin.Context) {
 	ctx, client := getSpannerConnection(c)
 	player, err := models.GetPlayer(ctx, client)
@@ -148,6 +159,9 @@ func getPlayer(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, player)
 }
 
+// addPlayerItem responds to the POST /players/items endpoint
+// Adds an item to the player's list of items when provided a valid game itemUUID.
+// TODO: ensure only private access from valid game servers
 func addPlayerItem(c *gin.Context) {
 	var playerItem models.PlayerItem
 
@@ -169,6 +183,7 @@ func addPlayerItem(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, playerItem)
 }
 
+// main initializes the gin router and configures the endpoints
 func main() {
 	configuration, _ := config.NewConfig()
 

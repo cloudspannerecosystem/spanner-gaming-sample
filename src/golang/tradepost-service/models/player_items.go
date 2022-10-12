@@ -24,6 +24,7 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// PlayerItem represents information about a player_item relevant to the tradepost service
 type PlayerItem struct {
 	PlayerItemUUID string           `json:"playerItemUUID" binding:"omitempty,uuid4"`
 	PlayerUUID     string           `json:"playerUUID" binding:"required,uuid4"`
@@ -36,7 +37,7 @@ type PlayerItem struct {
 	Visible        bool             `json:"visible"`
 }
 
-// Used for load generation to get a PlayerItem from players that are actively playing in a game.
+// GetRandomPlayerItem returns a player item from players that are actively playing in a game.
 func GetRandomPlayerItem(ctx context.Context, client spanner.Client) (PlayerItem, error) {
 	var pi PlayerItem
 
@@ -66,6 +67,7 @@ func GetRandomPlayerItem(ctx context.Context, client spanner.Client) (PlayerItem
 	return pi, nil
 }
 
+// GetPlayerItem returns a player's item
 // When given a playerUUID and itemUUID, return the player item data.
 // Uses mutations, so should not used to read-after-write
 func GetPlayerItem(ctx context.Context, txn *spanner.ReadWriteTransaction, playerUUID string, playerItemUUID string) (PlayerItem, error) {
@@ -85,7 +87,7 @@ func GetPlayerItem(ctx context.Context, txn *spanner.ReadWriteTransaction, playe
 	return pi, nil
 }
 
-// Move an item to a new player, removes the item entry from the old player
+// MoveItem moves an item to a new player, and removes the item entry from the old player
 func (pi *PlayerItem) MoveItem(ctx context.Context, txn *spanner.ReadWriteTransaction, toPlayer string) error {
 	err := txn.BufferWrite([]*spanner.Mutation{
 		spanner.Insert("player_items", []string{"playerItemUUID", "playerUUID", "itemUUID", "price", "source", "game_session"},

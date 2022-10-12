@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package models interacts with the backend database to handle the stateful
+// data for the matchmaking service.
+//
+// Provides models for games and players relevant to matchmaking
 package models
 
 import (
@@ -27,6 +31,7 @@ import (
 	iterator "google.golang.org/api/iterator"
 )
 
+// Game represents information for a single game
 type Game struct {
 	GameUUID string           `json:"gameUUID"`
 	Players  []string         `json:"players"`
@@ -35,11 +40,12 @@ type Game struct {
 	Finished spanner.NullTime `json:"finished"`
 }
 
+// generateUUID is a private helper to create and returns a v4 UUID string.
 func generateUUID() string {
 	return uuid.NewString()
 }
 
-// Helper function to read rows from Spanner.
+// readRows is a private helper function to read rows from Spanner.
 func readRows(iter *spanner.RowIterator) ([]spanner.Row, error) {
 	var rows []spanner.Row
 	defer iter.Stop()
@@ -60,7 +66,7 @@ func readRows(iter *spanner.RowIterator) ([]spanner.Row, error) {
 	return rows, nil
 }
 
-// Provided a game UUID, determine the winner
+// determineWinner returns the uuid of the winning player
 // Current implementation is a random player from the list of players assigned to the game
 func determineWinner(playerUUIDs []string) string {
 	if len(playerUUIDs) == 0 {
@@ -75,7 +81,7 @@ func determineWinner(playerUUIDs []string) string {
 	return winnerUUID
 }
 
-// Get players for a game
+// getGamePlayers returns player information for a specificied game
 // We only care about the playerUUID and their stats, as this is intended to be used
 // to modify players when a game is closed. We get the current_game to make sure later that the player is part of the game.
 func (g Game) getGamePlayers(ctx context.Context, txn *spanner.ReadWriteTransaction) ([]string, []Player, error) {
@@ -118,7 +124,7 @@ func (g Game) getGamePlayers(ctx context.Context, txn *spanner.ReadWriteTransact
 	return playerUUIDs, players, nil
 }
 
-// Retrieve an open game.
+// GetOpenGame returns the gameUUID of an open game.
 func GetOpenGame(ctx context.Context, client spanner.Client) (Game, error) {
 	var g Game
 
@@ -151,7 +157,7 @@ func GetOpenGame(ctx context.Context, client spanner.Client) (Game, error) {
 	return g, nil
 }
 
-// Given a list of players and a winner's UUID, update players of a game
+// updateGamePlayers updates a game's player statistics when closing out a game.
 // Updating players involves closing out the game (current_game = NULL) and
 // updating their game stats. Specifically, we are incrementing games_played.
 // If the player is the determined winner, then their games_won stat is incremented.
@@ -198,7 +204,7 @@ func (g Game) updateGamePlayers(ctx context.Context, players []Player, txn *span
 	return nil
 }
 
-// Create a new game and assign players
+// CreateGame starts a new game and assign players
 // Players that are not currently playing a game are eligble to be selected for the new game
 // Current implementation allows for less than numPlayers to be placed in a game
 func (g *Game) CreateGame(ctx context.Context, client spanner.Client) error {
@@ -257,7 +263,7 @@ func (g *Game) CreateGame(ctx context.Context, client spanner.Client) error {
 	return nil
 }
 
-// Closing game. When provided a Game, chose a random winner and close out the game.
+// CloseGame chooses a random winner and closes the game when provided a game UUID
 // A game is closed by setting the winner and finished time.
 // Additionally all players' game stats are updated, and the current_game is set to null to allow
 // them to be chosen for a new game.

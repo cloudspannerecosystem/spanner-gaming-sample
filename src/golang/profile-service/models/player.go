@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package models interacts with the backend database to handle the stateful
+// data for the profile service.
 package models
 
 import (
@@ -24,16 +26,17 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	iterator "google.golang.org/api/iterator"
 )
 
 var validate *validator.Validate
 
+// PlayerStats provides various statistics for a player
 type PlayerStats struct {
 	Games_played spanner.NullInt64 `json:"games_played"`
 	Games_won    spanner.NullInt64 `json:"games_won"`
 }
 
+// Player maps to the fields stored for the backend database
 type Player struct {
 	PlayerUUID      string           `json:"playerUUID" validate:"omitempty,uuid4"`
 	Player_name     string           `json:"player_name" validate:"required_with=Password Email"`
@@ -54,28 +57,7 @@ func init() {
 	validate = validator.New()
 }
 
-// Helper function to read rows from Spanner.
-func readRows(iter *spanner.RowIterator) ([]spanner.Row, error) {
-	var rows []spanner.Row
-	defer iter.Stop()
-
-	for {
-		row, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		rows = append(rows, *row)
-	}
-
-	return rows, nil
-}
-
-// TODO complexity validation
+// hashPassword is a private helper to encrypte a password using the bcrypt library
 func hashPassword(pwd string) ([]byte, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
 
@@ -86,14 +68,18 @@ func hashPassword(pwd string) ([]byte, error) {
 	return hash, nil
 }
 
+// validatePassword is a private helper to ensure a supplied hash matches the stored encrypted
+// password.
 func validatePassword(pwd string, hash []byte) error {
 	return bcrypt.CompareHashAndPassword(hash, []byte(pwd))
 }
 
+// generateUUID is a private helper to create and returns a v4 UUID string.
 func generateUUID() string {
 	return uuid.NewString()
 }
 
+// Validate that the player has the required information based on the type's validation rules.
 func (p *Player) Validate() error {
 	validate = validator.New()
 	err := validate.Struct(p)
@@ -108,6 +94,10 @@ func (p *Player) Validate() error {
 	return nil
 }
 
+// AddPlayer provides functionality to insert a player into the backend.
+// Provide with the required fields from the API call, the password is hashed and
+// a UUID is generated. This is then inserted, along with empty stats, into
+// the Spanner database.
 func (p *Player) AddPlayer(ctx context.Context, client spanner.Client) error {
 	// Validate based on struct validation rules
 	err := p.Validate()
@@ -152,7 +142,7 @@ func (p *Player) AddPlayer(ctx context.Context, client spanner.Client) error {
 		return err
 	})
 
-	// todo: Handle 'AlreadyExists' errors
+	// TODO: Handle 'AlreadyExists' errors
 	if err != nil {
 		return err
 	}
@@ -161,32 +151,8 @@ func (p *Player) AddPlayer(ctx context.Context, client spanner.Client) error {
 	return nil
 }
 
-// TODO: Currently limits to 10k by default. This shouldn't be exposed to public API usage
-func GetPlayerUUIDs(ctx context.Context, client spanner.Client) ([]string, error) {
-	ro := client.ReadOnlyTransaction()
-	stmt := spanner.Statement{SQL: `SELECT playerUUID FROM players LIMIT 10000`}
-	iter := ro.Query(ctx, stmt)
-	defer iter.Stop()
-
-	playerRows, err := readRows(iter)
-	if err != nil {
-		return nil, err
-	}
-
-	var playerUUIDs []string
-
-	for _, row := range playerRows {
-		var pUUID string
-		if err := row.Columns(&pUUID); err != nil {
-			return nil, err
-		}
-
-		playerUUIDs = append(playerUUIDs, pUUID)
-	}
-
-	return playerUUIDs, nil
-}
-
+// GetPlayerByUUID returns a Player based on a provided uuid. In the event of an error
+// retrieving the player, an empty Player is returned with the error.
 func GetPlayerByUUID(ctx context.Context, client spanner.Client, uuid string) (Player, error) {
 	row, err := client.Single().ReadRow(ctx, "players",
 		spanner.Key{uuid}, []string{"playerUUID", "player_name", "email", "stats"})
