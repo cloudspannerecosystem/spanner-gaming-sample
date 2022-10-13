@@ -20,6 +20,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           working-directory: ./src/golang/${{matrix.service}}-service
+          args: --timeout 180s
   test:
     name: Unit tests
     runs-on: ubuntu-latest
