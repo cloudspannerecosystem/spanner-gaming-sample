@@ -7,6 +7,41 @@ This repository contains sample code for the following use-cases when using Clou
 - Item and currency acquisition for players in active games
 - Ability to buy and sell items on a tradepost
 
+![gaming_backend_services.png](images/gaming_backend_services.png)
+
+## REST endpoints
+
+These are the REST endpoints exposed by backend services
+
+### profile service
+![gaming_backend_profile_rest.png](images/gaming_backend_profile_rest.png)
+
+### matchmaking service
+![gaming_backend_matchmaking_rest.png](images/gaming_backend_matchmaking_rest.png)
+
+### item service
+![gaming_backend_item_rest.png](images/gaming_backend_item_rest.png)
+
+### tradepost service
+![gaming_backend_tradepost_rest.png](images/gaming_backend_tradepost_rest.png)
+
+## Spanner schema
+
+The Cloud Spanner schema that supports the backend services looks like this.
+
+### Players and games
+![gaming_schema_players_and_games.png](images/gaming_schema_players_and_games.png)
+
+### Items and player ledger
+![gaming_schema_items.png](images/gaming_schema_items.png)
+
+> **NOTE:** Players table is repeated to show relation
+
+### Trades and player items
+![gaming_schema_trades.png](images/gaming_schema_trades.png)
+
+> **NOTE:** Players and player_items tables are repeated to show relations
+
 ## How to use this demo
 
 ### Setup infrastructure
