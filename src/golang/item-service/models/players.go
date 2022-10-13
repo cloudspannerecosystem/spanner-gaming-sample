@@ -92,7 +92,7 @@ func GetPlayer(ctx context.Context, client spanner.Client) (Player, error) {
 
 // UpdateBalance records a modification to a player's balance and updates that balance
 // TODO: fix code to update a player's balance, not a ledger balance
-func (l *PlayerLedger) UpdateBalance(ctx context.Context, client spanner.Client, p *Player) error {
+func (p *Player) UpdateBalance(ctx context.Context, client spanner.Client, l PlayerLedger) error {
 	// Update balance with new amount
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		p.PlayerUUID = l.PlayerUUID
@@ -134,7 +134,7 @@ func (l *PlayerLedger) UpdateBalance(ctx context.Context, client spanner.Client,
 			}
 			var accountBalance big.Rat
 			var gameSession string
-			// TODO: Better error message if current_game is empty
+
 			if err := row.Columns(&accountBalance, &gameSession); err != nil {
 				return err
 			}
