@@ -27,16 +27,17 @@ import (
 )
 
 func readConfig(yml []byte) (*Config, error) {
-	viper.SetConfigType("yaml")
+	configFile := viper.New()
+	configFile.SetConfigType("yaml")
 
 	// Read the config
-	err := viper.ReadConfig(bytes.NewBuffer(yml))
+	err := configFile.ReadConfig(bytes.NewBuffer(yml))
 	if err != nil {
 		return &Config{}, err
 	}
 
 	var c Config
-	err = viper.Unmarshal(&c)
+	err = configFile.Unmarshal(&c)
 	if err != nil {
 		return &Config{}, err
 	}
