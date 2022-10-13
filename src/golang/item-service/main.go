@@ -121,6 +121,7 @@ func updatePlayerBalance(c *gin.Context) {
 	var player models.Player
 	var ledger models.PlayerLedger
 
+	// Bind the request with the ledger, which has information about player and the amount
 	if err := c.BindJSON(&ledger); err != nil {
 		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
 			fmt.Printf("could not abort: %s", err)
@@ -129,7 +130,7 @@ func updatePlayerBalance(c *gin.Context) {
 	}
 
 	ctx, client := getSpannerConnection(c)
-	if err := ledger.UpdateBalance(ctx, client, &player); err != nil {
+	if err := player.UpdateBalance(ctx, client, ledger); err != nil {
 		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
 			fmt.Printf("could not abort: %s", err)
 		}
