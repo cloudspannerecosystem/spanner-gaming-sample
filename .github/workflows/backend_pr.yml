@@ -1,5 +1,5 @@
 
-name: Microservices code tests
+name: Backend code tests
 on:
   pull_request:
     paths:
@@ -20,9 +20,9 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           working-directory: ./src/golang/${{matrix.service}}-service
-          args: --timeout 180s
+          args: --timeout 120s --verbose
   test:
-    name: Unit tests
+    name: Tests
     runs-on: ubuntu-latest
     needs: lint
     strategy:
