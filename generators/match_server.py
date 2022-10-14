@@ -24,8 +24,6 @@ class GameMatch(HttpUser):
     leveraging the matchmaking-service
     """
 
-    open_games = []
-
     @task(2)
     def create_game(self):
         """Task to create a new game"""
@@ -33,28 +31,25 @@ class GameMatch(HttpUser):
         headers = {"Content-Type": "application/json"}
 
         # Create the game, then store the response in memory of list of open games.
-        with self.client.post("/games/create", headers=headers, catch_response=True) as response:
-            try:
-                game_uuid = response.json()
-                self.open_games.append({"gameUUID": game_uuid})
-            except json.JSONDecodeError as exc:
-                raise RescheduleTask() from exc
-            except KeyError:
-                response.failure("Response did not contain expected key 'gameUUID'")
+        self.client.post("/games/create", headers=headers)
 
     @task(1)
     def close_game(self):
         """Task to close a previously opened game"""
-        # No open games are in memory, reschedule task to run again later.
-        if len(self.open_games) == 0:
-            raise RescheduleTask()
-
         headers = {"Content-Type": "application/json"}
 
-        # Close the first open game in our list, removing it to avoid contention
-        # from concurrent requests
-        game = self.open_games[0]
-        del self.open_games[0]
+        # Get an open game to be closed
+        with self.client.get("/games/open", headers=headers, catch_response=True) as response:
+            try:
+                game_uuid = response.json()["gameUUID"]
 
-        data = {"gameUUID": game["gameUUID"]}
-        self.client.put("/games/close", data=json.dumps(data), headers=headers)
+                # Reschedule task when game_uuid is empty
+                if game_uuid == "":
+                    raise RescheduleTask()
+
+                data = {"gameUUID": game_uuid}
+                self.client.put("/games/close", data=json.dumps(data), headers=headers)
+            except json.JSONDecodeError:
+                response.failure("Response could not be decoded as JSON")
+            except KeyError:
+                response.failure("Response did not contain expected key 'gameUUID'")

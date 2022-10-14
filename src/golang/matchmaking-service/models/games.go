@@ -129,13 +129,8 @@ func GetOpenGame(ctx context.Context, client spanner.Client) (Game, error) {
 	var g Game
 
 	// Get an open game
-	// Initial inefficient query to get a random game that does not query from an index
-	query := fmt.Sprintf("SELECT gameUUID FROM (SELECT gameUUID FROM games WHERE finished IS NULL) TABLESAMPLE RESERVOIR (%d ROWS)", 1)
-
-	// TODO: A potential query to get the oldest open game, combined with an index on 'finished' is much faster.
-	//       However, there are contention issues with concurrent queries due to this not closing the game in a
-	//       single read-write transaction.
-	// query := "SELECT gameUUID FROM games WHERE finished IS NULL ORDER BY created DESC LIMIT 1"
+	// Retrieve a random unfinished from 10 of the oldest games to reduce concurrency contention when closing the same game
+	query := fmt.Sprintf("SELECT gameUUID FROM (SELECT gameUUID FROM games WHERE finished IS NULL ORDER BY created DESC LIMIT 10) TABLESAMPLE RESERVOIR (%d ROWS)", 1)
 
 	stmt := spanner.Statement{SQL: query}
 
@@ -182,8 +177,7 @@ func (g Game) updateGamePlayers(ctx context.Context, players []Player, txn *span
 		// Update player
 		// If player's current game isn't the same as this game, that's an error
 		if p.Current_game != g.GameUUID {
-			errorMsg := fmt.Sprintf("Player '%s' doesn't belong to game '%s'.", p.PlayerUUID, g.GameUUID)
-			return errors.New(errorMsg)
+			return fmt.Errorf("player '%s' doesn't belong to game '%s'", p.PlayerUUID, g.GameUUID)
 		}
 
 		cols := []string{"playerUUID", "current_game", "stats"}
@@ -271,22 +265,6 @@ func (g *Game) CloseGame(ctx context.Context, client spanner.Client) error {
 	// Close game
 	_, err := client.ReadWriteTransaction(ctx,
 		func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-			// Get game players
-			playerUUIDs, players, err := g.getGamePlayers(ctx, txn)
-
-			if err != nil {
-				return err
-			}
-
-			// Might be an issue if there are no players!
-			if len(playerUUIDs) == 0 {
-				errorMsg := fmt.Sprintf("No players found for game '%s'", g.GameUUID)
-				return errors.New(errorMsg)
-			}
-
-			// Get random winner
-			g.Winner = determineWinner(playerUUIDs)
-
 			// Validate game finished time is null
 			row, err := txn.ReadRow(ctx, "games", spanner.Key{g.GameUUID}, []string{"finished"})
 			if err != nil {
@@ -302,6 +280,22 @@ func (g *Game) CloseGame(ctx context.Context, client spanner.Client) error {
 				errorMsg := fmt.Sprintf("Game '%s' is already finished.", g.GameUUID)
 				return errors.New(errorMsg)
 			}
+
+			// Get game players
+			playerUUIDs, players, err := g.getGamePlayers(ctx, txn)
+
+			if err != nil {
+				return err
+			}
+
+			// Might be an issue if there are no players!
+			if len(playerUUIDs) == 0 {
+				errorMsg := fmt.Sprintf("No players found for game '%s'", g.GameUUID)
+				return errors.New(errorMsg)
+			}
+
+			// Get random winner
+			g.Winner = determineWinner(playerUUIDs)
 
 			cols := []string{"gameUUID", "finished", "winner"}
 			err = txn.BufferWrite([]*spanner.Mutation{
