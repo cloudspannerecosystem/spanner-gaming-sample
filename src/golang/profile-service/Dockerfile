@@ -18,8 +18,11 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o profile-service -ldflags="-w -s" .
 
-FROM scratch
+FROM alpine:latest as certs
+RUN apk --update add ca-certificates
 
+FROM scratch
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /app/profile-service /usr/bin/
 
 EXPOSE 80

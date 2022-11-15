@@ -12,10 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-variable "gcp_project" {
-  type = string
+variable "gcp_services" {
+    description = "Enable project services"
+    type        = list(string)
+    default     = ["compute.googleapis.com", "spanner.googleapis.com", "cloudbuild.googleapis.com", "container.googleapis.com", "artifactregistry.googleapis.com"]
 }
 
-provider "google" {
-  project = var.gcp_project
+resource "google_project_service" "project_services" {
+    count = length(var.gcp_services)
+    service = var.gcp_services[count.index]
+
+    timeouts {
+        create = "30m"
+        update = "40m"
+    }
+
+    disable_dependent_services = true
 }

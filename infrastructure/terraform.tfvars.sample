@@ -9,3 +9,16 @@ spanner_config = {
     environment       = "staging"
 }
 
+backend_sa_config = {
+    name     = "cymbal-games-backend"
+    description     = "Cymbal Games backend service account"
+}
+
+gke_config = {
+    cluster_name      = "CLUSTER"
+    location          = "us-central1"
+    resource_labels   = {
+        environment = "staging"
+    }
+}
+

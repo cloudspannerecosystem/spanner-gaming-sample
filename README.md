@@ -73,7 +73,7 @@ A terraform file is provided that creates the appropriate resources for these sa
 
 Resources that are created:
 - Spanner instance and database based on user variables in main.tfvars
-- (TODO) GKE cluster to run the load generators
+- [GKE cluster](./docs/GKE.md) to run the services
 
 To set up the infrastructure, do the following:
 
@@ -101,7 +101,16 @@ export SPANNER_DATABASE_ID=DATABASEID
 ./schema.bash
 ```
 
-### Player profile sample
+### Deploy services
+You can deploy the services to the GKE cluster that was configured by Terraform, or you can deploy them locally.
+
+To deploy to GKE, follow the [instructions here](./docs/GKE.md)
+
+Otherwise, follow the local deployment instructions for player profile and tradepost
+
+#### Local player profile deployment
+
+> **NOTE:** Skip this section if you deployed the services using [GKE](./docs/GKE.md)
 
 - Configure [`profile-service`](src/golang/profile-service) either by using environment variables or by copying the `profile-service/config.yml.template` file to `profile-service/config.yml`, and modify the Spanner connection details:
 
@@ -155,7 +164,9 @@ go run .
 
 - [Generate load](generators/README.md).
 
-### Player trading sample
+#### Local player trading deployment
+
+> **NOTE:** Skip this section if you deployed the services using [GKE](./docs/GKE.md)
 
 - Configure [`item-service`](src/golang/item-service) either by using environment variables or by copying the `item-service/config.yml.template` file to `item-service/config.yml`, and modify the Spanner connection details:
 
