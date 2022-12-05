@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# A convenience script to help developers easily submit service builds to Cloud Build
+# A convenience script to help developers easily deploy services to GKE cluster
 if [ -z "${PROJECT_ID}" ]; then
     echo "[ERROR] PROJECT_ID environment variable must be set" >&2
     exit 1
@@ -24,7 +24,7 @@ basedir=`pwd`
 
 cd "${basedir}/kubernetes-manifests"
 
-# Submit a build command to
+# Submit a kubectl apply for each deployment file
 for service in profile-service matchmaking-service item-service tradepost-service; do
     echo "[INFO] Configuring ${service}"
     sed "s/\bPROJECT_ID\b/${PROJECT_ID}/" "${service}.yaml.tmpl" > "${service}.yaml"
