@@ -34,7 +34,7 @@ resource "google_compute_subnetwork" "subnet" {
   network       = google_compute_network.vpc.id
 }
 
-resource "google_container_cluster" "cymbal-games-gke" {
+resource "google_container_cluster" "sample-game-gke" {
   name     = var.gke_config.cluster_name
   location = var.gke_config.location
 

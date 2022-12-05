@@ -46,6 +46,10 @@ The Cloud Spanner schema that supports the backend services looks like this.
 
 ### Setup infrastructure
 
+You can either set up the Spanner infrastructure using the gcloud command line or Terraform. Instructions for both are below.
+
+> **NOTE:** The Terraform scripts also create a GKE Autopilot cluster.
+
 #### Gcloud command line
 
 To create the Spanner instance using gcloud, you must first [install and configure gcloud](https://cloud.google.com/sdk/docs/install-sdk).
@@ -61,9 +65,9 @@ gcloud config set project <PROJECT_ID>
 Now, create the Spanner instance and database:
 
 ```
-gcloud spanner instances create game-instance --config=regional-us-central1 --description=gaming-instance --processing-units=500
+gcloud spanner instances create sample-instance --config=regional-us-central1 --description=gaming-instance --processing-units=500
 
-gcloud spanner databases create --instance game-instance sample-game
+gcloud spanner databases create --instance sample-instance sample-game
 ```
 
 > **NOTE:** The above command will create an instance using the us-central1 [regional configuration](https://cloud.google.com/spanner/docs/instance-configurations) with a compute capacity of 500 processing units. Be aware that creating an instance will start billing your account unless you are under Google Cloud's [free trial credits](https://cloud.google.com/free).
@@ -83,8 +87,12 @@ To set up the infrastructure, do the following:
 
 ```
 cd infrastructure
+terraform init
 cp terraform.tfvars.sample terraform.tfvars
 vi terraform.tfvars # modify variables
+
+# Authenticate to gcloud services so Terraform can make changes
+gcloud auth application-default login
 
 terraform apply
 ```
@@ -92,21 +100,27 @@ terraform apply
 ### Setup schema
 Schema is managed by [Wrench](https://github.com/cloudspannerecosystem/wrench).
 
-After installing wrench, migrate the schema by running the `schema.bash` file (replace project/instance/database information with what was used in terraform file):
+After installing wrench, migrate the schema by running the `./scripts/schema.sh` file (replace project/instance/database information with what was used in terraform file):
 
 ```
-export SPANNER_PROJECT_ID=PROJECTID
-export SPANNER_INSTANCE_ID=INSTANCEID
-export SPANNER_DATABASE_ID=DATABASEID
-./schema.bash
+export SPANNER_PROJECT_ID=YOUR_PROJECT_ID
+export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
+export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
+./scripts/schema.sh
 ```
+
+> **NOTE:** The schema must be in place for the services to work. Do not skip this step!
 
 ### Deploy services
 You can deploy the services to the GKE cluster that was configured by Terraform, or you can deploy them locally.
 
-To deploy to GKE, follow the [instructions here](./docs/GKE.md)
+To deploy to GKE, follow the [instructions here](./docs/GKE.md).
 
-Otherwise, follow the local deployment instructions for player profile and tradepost
+Otherwise, follow the local deployment instructions for player profile and tradepost.
+
+Once the services are deployed you can use the generators to [run workloads](./generators/README.md).
+
+Then follow the README to clean up based on whether you deployed with gcloud or Terraform.
 
 #### Local player profile deployment
 
@@ -115,18 +129,18 @@ Otherwise, follow the local deployment instructions for player profile and trade
 - Configure [`profile-service`](src/golang/profile-service) either by using environment variables or by copying the `profile-service/config.yml.template` file to `profile-service/config.yml`, and modify the Spanner connection details:
 
 ```
-# environment variables
-export SPANNER_PROJECT_ID=PROJECTID
-export SPANNER_INSTANCE_ID=INSTANCEID
-export SPANNER_DATABASE_ID=DATABASEID
+# environment variables. change the YOUR_* values to your information
+export SPANNER_PROJECT_ID=YOUR_PROJECT_ID
+export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
+export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
 ```
 
 ```
-# config.yml spanner connection details
+# config.yml spanner connection details. change the YOUR_* values to your information
 spanner:
-  project_id: YOUR_GCP_PROJECT_ID
-  instance_id: YOUR_SPANNER_INSTANCE_ID
-  database_id: YOUR_SPANNER_DATABASE_ID
+  project_id: YOUR_PROJECT_ID
+  instance_id: YOUR_INSTANCE_ID
+  database_id: YOUR_DATABASE_ID
 
 ```
 
@@ -141,17 +155,17 @@ go run .
 
 ```
 # environment variables
-export SPANNER_PROJECT_ID=PROJECTID
-export SPANNER_INSTANCE_ID=INSTANCEID
-export SPANNER_DATABASE_ID=DATABASEID
+export SPANNER_PROJECT_ID=YOUR_PROJECT_ID
+export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
+export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
 ```
 
 ```
 # config.yml spanner connection details
 spanner:
-  project_id: YOUR_GCP_PROJECT_ID
-  instance_id: YOUR_SPANNER_INSTANCE_ID
-  database_id: YOUR_SPANNER_DATABASE_ID
+  project_id: YOUR_PROJECT_ID
+  instance_id: YOUR_INSTANCE_ID
+  database_id: YOUR_DATABASE_ID
 
 ```
 
@@ -162,8 +176,6 @@ cd src/golang/matchmaking-service
 go run .
 ```
 
-- [Generate load](generators/README.md).
-
 #### Local player trading deployment
 
 > **NOTE:** Skip this section if you deployed the services using [GKE](./docs/GKE.md)
@@ -172,17 +184,17 @@ go run .
 
 ```
 # environment variables
-export SPANNER_PROJECT_ID=PROJECTID
-export SPANNER_INSTANCE_ID=INSTANCEID
-export SPANNER_DATABASE_ID=DATABASEID
+export SPANNER_PROJECT_ID=YOUR_PROJECT_ID
+export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
+export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
 ```
 
 ```
 # config.yml spanner connection details
 spanner:
-  project_id: YOUR_GCP_PROJECT_ID
-  instance_id: YOUR_SPANNER_INSTANCE_ID
-  database_id: YOUR_SPANNER_DATABASE_ID
+  project_id: YOUR_PROJECT_ID
+  instance_id: YOUR_INSTANCE_ID
+  database_id: YOUR_DATABASE_ID
 
 ```
 
@@ -197,17 +209,17 @@ go run .
 
 ```
 # environment variables
-export SPANNER_PROJECT_ID=PROJECTID
-export SPANNER_INSTANCE_ID=INSTANCEID
-export SPANNER_DATABASE_ID=DATABASEID
+export SPANNER_PROJECT_ID=YOUR_PROJECT_ID
+export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
+export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
 ```
 
 ```
 # config.yml spanner connection details
 spanner:
-  project_id: YOUR_GCP_PROJECT_ID
-  instance_id: YOUR_SPANNER_INSTANCE_ID
-  database_id: YOUR_SPANNER_DATABASE_ID
+  project_id: YOUR_PROJECT_ID
+  instance_id: YOUR_INSTANCE_ID
+  database_id: YOUR_DATABASE_ID
 
 ```
 
@@ -218,31 +230,7 @@ cd src/golang/tradepost-service
 go run .
 ```
 
-- [Generate load](generators/README.md).
-
-
-### Generator dependencies
-
-The generators are run by Locust.io, which is a Python framework for generating load.
-
-There are several dependencies required to get the generators to work:
-
-- Python 3.7+
-- Locust
-
-Assuming python3.X is installed, install dependencies via [pip](https://pypi.org/project/pip/):
-
-```
-# if pip3 is symlinked to pip
-pip install -r requirements.txt
-
-# if pip3 is not symlinked to pip
-pip3 install -r requirements.txt
-```
-
-> **NOTE:** To avoid modifying existing pip libraries on your machine, consider a solution like [virtualenv](https://pypi.org/project/virtualenv/).
-
-## How to build the services
+## How to build the services locally
 
 A Makefile is provided to build the services. Example commands:
 
@@ -283,7 +271,7 @@ make test-all
 If the Spanner instance was created using the gcloud command line, it can be delete using gcloud:
 
 ```
-gcloud spanner instances delete game-instance
+gcloud spanner instances delete sample-instance
 ```
 
 ### Terraform
