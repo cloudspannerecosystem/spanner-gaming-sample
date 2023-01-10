@@ -27,7 +27,7 @@ cd "${basedir}/kubernetes-manifests"
 # Submit a kubectl apply for each deployment file
 for service in profile-service matchmaking-service item-service tradepost-service; do
     echo "[INFO] Configuring ${service}"
-    sed "s/\bPROJECT_ID\b/${PROJECT_ID}/" "${service}.yaml.tmpl" > "${service}.yaml"
+    sed "s/GCP_PROJECT_ID/${PROJECT_ID}/" "${service}.yaml.tmpl" > "${service}.yaml"
 
     echo "[INFO] Deploying ${service}"
     kubectl apply -f "${service}.yaml"

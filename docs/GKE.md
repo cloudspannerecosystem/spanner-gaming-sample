@@ -73,4 +73,4 @@ export PROJECT_ID=<google cloud project id>
 
 ## What's next
 
-Once the services are deployed you can use the generators to [run workloads](./generators/README.md).
+Once the services are deployed you can use the generators to [run workloads](../generators/README.md).

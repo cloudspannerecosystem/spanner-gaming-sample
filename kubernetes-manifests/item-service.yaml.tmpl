@@ -41,10 +41,10 @@ spec:
       volumes:
         - name: backend-sa-key
           secret:
-            secretName: cymbal-games-backend-sa-key
+            secretName: sample-game-backend-sa-key
       containers:
       - name: item-service
-        image: gcr.io/PROJECT_ID/item-service:latest # EDIT: Your GCP Project ID
+        image: gcr.io/GCP_PROJECT_ID/item-service:latest # EDIT: Your GCP Project ID
         ports:
           - containerPort: 80
         volumeMounts:
@@ -74,8 +74,10 @@ spec:
             value: "80"
         resources:
           requests:
-            cpu: "1"
-            memory: "64Mi"
+            cpu: "500m"
+            memory: "512Mi"
+            ephemeral-storage: "100Mi"
           limits:
-            cpu: "1"
-            memory: "64Mi"
+            cpu: "500m"
+            memory: "512Mi"
+            ephemeral-storage: "100Mi"
