@@ -24,7 +24,7 @@ class GameMatch(HttpUser):
     leveraging the matchmaking-service
     """
 
-    @task(2)
+    @task(1)
     def create_game(self):
         """Task to create a new game"""
 

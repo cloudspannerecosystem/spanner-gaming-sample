@@ -4,15 +4,34 @@ These generators leverage the [Locust](https://locust.io) python framework for g
 
 The generators can be run via the command line, or a web interface.
 
-If using the web interface, when you run the `locust` command for each service, you can point your web browser to the exposed port to determine
-concurrency of the load, in terms of "users". Then the load runs until the test is stopped in the browser.
+If using the web interface, when you run the `locust` command for each service, you can point your web browser to the exposed port to determine concurrency of the load, in terms of "users". Then the load runs until the test is stopped in the browser.
 
 Various charts are provided by the web interface to indicate the performance of the load test.
 
 If you do not want to use the web interface, the command line options specify the user concurrency, as well as a run time. Statistics are printed on the
 command line for the test.
 
+### Generator dependencies
 
+There are several dependencies required to get the generators to work:
+
+- Python 3.7+
+- Locust
+
+Assuming python3.X is installed, install dependencies via [pip](https://pypi.org/project/pip/):
+
+```
+# if pip3 is symlinked to pip
+pip install -r requirements.txt
+
+# if pip3 is not symlinked to pip
+pip3 install -r requirements.txt
+```
+
+> **NOTE:** To avoid modifying existing pip libraries on your machine, consider a solution like [virtualenv](https://pypi.org/project/virtualenv/).
+
+
+## Using the generators
 Provided generators do the following:
 
 - _authentication\_server.py_: mimics player signup and player retrieval by UUID. Login is not handled currently due to the necessity to track password creation.
