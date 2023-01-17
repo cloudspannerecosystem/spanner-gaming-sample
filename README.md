@@ -46,13 +46,9 @@ The Cloud Spanner schema that supports the backend services looks like this.
 
 ### Setup infrastructure
 
-You can either set up the Spanner infrastructure using the gcloud command line or Terraform. Instructions for both are below.
+Before you set up the infrastructure, it is important to enable the appropriate APIs using the gcloud command line.
 
-> **NOTE:** The Terraform scripts also create a GKE Autopilot cluster.
-
-#### Gcloud command line
-
-To create the Spanner instance using gcloud, you must first [install and configure gcloud](https://cloud.google.com/sdk/docs/install-sdk).
+You must [install and configure gcloud](https://cloud.google.com/sdk/docs/install-sdk).
 
 When that's complete, ensure your gcloud project is set correctly.
 
@@ -62,7 +58,21 @@ gcloud config set project <PROJECT_ID>
 
 > **NOTE:** You can find your PROJECT_ID in [Cloud Console](https://cloud.google.com/resource-manager/docs/creating-managing-projects#identifying_projects).
 
-Now, create the Spanner instance and database:
+Then, run the the `scripts/configure_project.sh` helper script to enable the following APIs in your project:
+
+- compute.googleapis.com
+- spanner.googleapis.com
+- cloudbuild.googleapis.com
+- container.googleapis.com
+- artifactregistry
+
+Once the APIs are enabled, you can set up the Spanner infrastructure using either the gcloud command line or Terraform. Instructions for both are below.
+
+> **NOTE:** The Terraform scripts also create a GKE Autopilot cluster.
+
+#### Gcloud command line
+
+To create the Spanner instance and database using gcloud, issue the following commands:
 
 ```
 gcloud spanner instances create sample-instance --config=regional-us-central1 --description=gaming-instance --processing-units=500
