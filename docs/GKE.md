@@ -41,17 +41,6 @@ export PROJECT_ID=<YOUR_PROJECT_ID>
 
 Once the images have been built, it is time to deploy the [kubernetes manifests](../kubernetes-manifests). Each backend application provides a LoadBalance service and a deployment.
 
-Create the secret for the service account that will connect to the Spanner instance:
-
-```
-export SERVICE_ACCOUNT=sample-game-backend
-gcloud iam service-accounts keys create backend_sa_key.json \
-    --iam-account=${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
-
-kubectl create secret generic sample-game-backend-sa-key \
- --from-file=backend_sa_key.json=./backend_sa_key.json
-```
-
 Create a config map for the Spanner instance
 
 ```
@@ -62,6 +51,7 @@ sed -e "s/PROJECT_ID/$PROJECT_ID/" \
 
 kubectl apply -f spanner_config.yaml
 ```
+> Note: [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity) manages credentials to ensure access to Cloud Spanner
 
 ### Deploy the manifests
 Once you have the kubernetes secret and config map established to connec to Cloud Spanner, the only thing left is to deploy the manifests. A [`scripts/deploy.sh`](../scripts/deploy.sh) file has been created to assist with this process.
