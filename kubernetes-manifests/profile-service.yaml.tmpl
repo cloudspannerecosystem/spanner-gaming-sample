@@ -38,21 +38,13 @@ spec:
       labels:
         app: cymbal-games-profile
     spec:
-      volumes:
-        - name: backend-sa-key
-          secret:
-            secretName: sample-game-backend-sa-key
+      serviceAccountName: k8s-service-account
       containers:
       - name: profile-service
         image: gcr.io/GCP_PROJECT_ID/profile-service:latest # EDIT: Your GCP Project ID
         ports:
           - containerPort: 80
-        volumeMounts:
-          - mountPath: /var/secrets
-            name: backend-sa-key
         env:
-          - name: GOOGLE_APPLICATION_CREDENTIALS
-            value: /var/secrets/backend_sa_key.json
           - name: SPANNER_PROJECT_ID
             valueFrom:
               configMapKeyRef:

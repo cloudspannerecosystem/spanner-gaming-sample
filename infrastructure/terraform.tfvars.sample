@@ -14,6 +14,8 @@ backend_sa_config = {
     description     = "Sample Game backend service account"
 }
 
+k8s_service_account_id    = "k8s-service-account"
+
 gke_config = {
     cluster_name      = "sample-game-gke"
     location          = "us-central1"
@@ -21,4 +23,5 @@ gke_config = {
         environment = "staging"
     }
 }
+
 

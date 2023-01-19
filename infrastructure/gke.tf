@@ -12,28 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-variable "gke_config" {
-  type = object({
-    cluster_name = string
-    location = string
-    resource_labels = map(string)
-  })
-
-  description = "The configuration specifications for a GKE Autopilot cluster"
-}
-
-resource "google_compute_network" "vpc" {
-  name                    = "cymbal-game-staging-vpc"
-  auto_create_subnetworks = false
-}
-
-resource "google_compute_subnetwork" "subnet" {
-  name          = "cymbal-game-subnet"
-  ip_cidr_range = "10.1.0.0/16"
-  region        = "us-central1"
-  network       = google_compute_network.vpc.id
-}
-
 resource "google_container_cluster" "sample-game-gke" {
   name     = var.gke_config.cluster_name
   location = var.gke_config.location
@@ -44,6 +22,36 @@ resource "google_container_cluster" "sample-game-gke" {
   # See issue: https://github.com/hashicorp/terraform-provider-google/issues/10782
   ip_allocation_policy {}
 
-# Enabling Autopilot for this cluster
+  # Enabling Autopilot for this cluster
   enable_autopilot = true
+}
+
+resource "google_service_account" "backend_sa" {
+  account_id   = var.backend_sa_config.name
+  display_name = var.backend_sa_config.description
+  project    = var.gcp_project
+}
+
+resource "kubernetes_service_account" "k8s-service-account" {
+  metadata {
+    name      = var.k8s_service_account_id
+    namespace = "default"
+    annotations = {
+      "iam.gke.io/gcp-service-account" : "${google_service_account.backend_sa.email}"
+    }
+  }
+}
+
+data "google_iam_policy" "spanner-policy" {
+  binding {
+    role = "roles/iam.workloadIdentityUser"
+    members = [
+      "serviceAccount:${var.gcp_project}.svc.id.goog[default/${kubernetes_service_account.k8s-service-account.metadata[0].name}]"
+    ]
+  }
+}
+
+resource "google_service_account_iam_policy" "backend-service-account-iam" {
+  service_account_id = google_service_account.backend_sa.name
+  policy_data        = data.google_iam_policy.spanner-policy.policy_data
 }
