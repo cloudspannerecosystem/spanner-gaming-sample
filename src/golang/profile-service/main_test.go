@@ -243,17 +243,14 @@ func TestMain(m *testing.M) {
 	ctx := context.Background()
 
 	// Setup the docker network so containers can talk to each other
-	nr := testcontainers.NetworkRequest{
-		Name:       TESTNETWORK,
-		Attachable: true,
-	}
-	_, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		NetworkRequest: nr,
+	net, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
+		NetworkRequest: testcontainers.NetworkRequest{
+			Name:           TESTNETWORK,
+			Attachable:     true,
+			CheckDuplicate: true,
+		},
 	})
-	if err != nil {
-		fmt.Printf("Error setting up docker test network: %s\n", err)
-		os.Exit(1)
-	}
+	defer net.Remove(ctx)
 
 	// Setup the emulator container and default instance/database
 	spannerEmulator, err := setupSpannerEmulator(ctx)
