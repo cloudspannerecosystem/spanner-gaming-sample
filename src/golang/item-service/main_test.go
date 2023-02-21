@@ -28,8 +28,8 @@ import (
 	instance "cloud.google.com/go/spanner/admin/instance/apiv1"
 	"embed"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/cloudspannerecosystem/spanner-gaming-sample/gaming-item-service/models"
+	"github.com/google/uuid"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
@@ -72,7 +72,7 @@ func teardown(ctx context.Context, emulator *Emulator, service *Service) {
 
 func setupSpannerEmulator(ctx context.Context) (*Emulator, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "gcr.io/cloud-spanner-emulator/emulator:latest",
+		Image:        "gcr.io/cloud-spanner-emulator/emulator:1.5.0",
 		ExposedPorts: []string{"9010/tcp"},
 		Networks: []string{
 			TESTNETWORK,
@@ -176,22 +176,10 @@ func setupDatabase(ctx context.Context, ec Emulator) error {
 	// get schema statements from file
 	schema, _ := SCHEMAFILE.ReadFile("test_data/schema.sql")
 
-	// Removing NOT NULL constraints for columns we don't care about in item tests
-	schemaStringFix := strings.Replace(string(schema), "password_hash BYTES(60) NOT NULL,", "password_hash BYTES(60),", 1)
+	// Remove trailing semi-colon/newline so Emulator can parse DDL statements
+	schemaString := strings.TrimSuffix(string(schema), ";\n")
 
-	// TODO: Remove this when the Spanner Emulator supports 'DEFAULT' syntax; NOT NULL removed to avoid errors
-	// and most of those columns we don't use at the moment
-	schemaStringFix = strings.Replace(schemaStringFix, "account_balance NUMERIC NOT NULL DEFAULT (0.00),", "account_balance NUMERIC,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "acquire_time TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP()),", "acquire_time TIMESTAMP,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "created TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP()),", "created TIMESTAMP,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "expires TIMESTAMP NOT NULL DEFAULT (TIMESTAMP_ADD(CURRENT_TIMESTAMP(), interval 24 HOUR)),", "expires TIMESTAMP,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "visible BOOL NOT NULL DEFAULT(true),", "visible BOOL,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "active BOOL NOT NULL DEFAULT (true),", "active BOOL,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "cancelled BOOL NOT NULL DEFAULT (false),", "cancelled BOOL,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "filled BOOL NOT NULL DEFAULT (false),", "filled BOOL,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "expired BOOL NOT NULL DEFAULT (false),", "expired BOOL,", 1)
-
-	schemaStatements := strings.Split(schemaStringFix, ";")
+	schemaStatements := strings.Split(schemaString, ";")
 
 	adminClient, err := database.NewDatabaseAdminClient(ctx)
 	if err != nil {
@@ -225,16 +213,16 @@ func loadTestData(ctx context.Context, ec Emulator) error {
 	}
 	defer client.Close()
 
-	playerColumns := []string{"playerUUID", "player_name", "email", "account_balance", "current_game"}
+	playerColumns := []string{"playerUUID", "player_name", "email", "password_hash", "account_balance", "current_game"}
 	gameColumns := []string{"gameUUID", "players", "created"}
 
 	gameUUID := uuid.NewString()
 	playerUUID := []string{uuid.NewString(), uuid.NewString(), uuid.NewString()}
 	m := []*spanner.Mutation{
 		spanner.Insert("games", gameColumns, []interface{}{gameUUID, []string{playerUUID[0], playerUUID[1], playerUUID[2]}, time.Now()}), // Adds 3 players to a game
-		spanner.Insert("players", playerColumns, []interface{}{playerUUID[0], "player1", "player1@email.com", "0.00", gameUUID}),
-		spanner.Insert("players", playerColumns, []interface{}{playerUUID[1], "player2", "player2@email.com", "0.00", gameUUID}),
-		spanner.Insert("players", playerColumns, []interface{}{playerUUID[2], "player3", "player3@email.com", "0.00", gameUUID}),
+		spanner.Insert("players", playerColumns, []interface{}{playerUUID[0], "player1", "player1@email.com", "adsfijapfja3234aipj", "0.00", gameUUID}),
+		spanner.Insert("players", playerColumns, []interface{}{playerUUID[1], "player2", "player2@email.com", "apoijawernipoav8210", "0.00", gameUUID}),
+		spanner.Insert("players", playerColumns, []interface{}{playerUUID[2], "player3", "player3@email.com", "9asil23jifa82all3i1", "0.00", gameUUID}),
 	}
 	_, err = client.Apply(ctx, m)
 	if err != nil {
@@ -295,7 +283,7 @@ func TestMain(m *testing.M) {
 	net, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
 		NetworkRequest: testcontainers.NetworkRequest{
 			Name:           TESTNETWORK,
-			Attachable: true,
+			Attachable:     true,
 			CheckDuplicate: true,
 		},
 	})

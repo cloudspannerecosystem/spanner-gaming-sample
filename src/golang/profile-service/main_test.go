@@ -166,6 +166,7 @@ func setupDatabase(ctx context.Context, ec Emulator) error {
 	schema, _ := SCHEMAFILE.ReadFile("test_data/schema.sql")
 
 	// TODO: remove this when the Spanner Emulator supports 'DEFAULT' syntax
+	// This is still a problem when using SQL to insert data. see: https://github.com/GoogleCloudPlatform/cloud-spanner-emulator/issues/101
 	schemaStringFix := strings.Replace(string(schema), "account_balance NUMERIC NOT NULL DEFAULT (0.00),", "account_balance NUMERIC,", 1)
 
 	schemaStatements := strings.Split(schemaStringFix, ";")

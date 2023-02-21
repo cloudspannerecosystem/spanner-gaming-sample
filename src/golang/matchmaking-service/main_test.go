@@ -68,7 +68,7 @@ func teardown(ctx context.Context, emulator *Emulator, service *Service) {
 
 func setupSpannerEmulator(ctx context.Context) (*Emulator, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "gcr.io/cloud-spanner-emulator/emulator:latest",
+		Image:        "gcr.io/cloud-spanner-emulator/emulator:1.5.0",
 		ExposedPorts: []string{"9010/tcp"},
 		Networks: []string{
 			TESTNETWORK,
@@ -172,11 +172,10 @@ func setupDatabase(ctx context.Context, ec Emulator) error {
 	// get schema statements from file
 	schema, _ := SCHEMAFILE.ReadFile("test_data/schema.sql")
 
-	// Removing NOT NULL constraints for columns we don't care about in matchmaking tests
-	schemaStringFix := strings.Replace(string(schema), "password_hash BYTES(60) NOT NULL,", "password_hash BYTES(60),", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "account_balance NUMERIC NOT NULL DEFAULT (0.00),", "account_balance NUMERIC,", 1)
+	// Remove trailing semi-colon/newline so Emulator can parse DDL statements
+	schemaString := strings.TrimSuffix(string(schema), ";\n")
 
-	schemaStatements := strings.Split(schemaStringFix, ";")
+	schemaStatements := strings.Split(schemaString, ";")
 
 	adminClient, err := database.NewDatabaseAdminClient(ctx)
 	if err != nil {
@@ -210,16 +209,16 @@ func loadTestData(ctx context.Context, ec Emulator) error {
 	}
 	defer client.Close()
 
-	playerColumns := []string{"playerUUID", "player_name", "email", "stats"}
+	playerColumns := []string{"playerUUID", "player_name", "email", "password_hash", "stats"}
 
 	emptyStatsStruct, _ := json.Marshal(models.PlayerStats{})
 	emptyStats := string(emptyStatsStruct)
 	m := []*spanner.Mutation{
-		spanner.Insert("players", playerColumns, []interface{}{1, "player1", "player1@email.com", emptyStats}),
-		spanner.Insert("players", playerColumns, []interface{}{2, "player2", "player2@email.com", emptyStats}),
-		spanner.Insert("players", playerColumns, []interface{}{3, "player3", "player3@email.com", emptyStats}),
-		spanner.Insert("players", playerColumns, []interface{}{4, "player4", "player4@email.com", emptyStats}),
-		spanner.Insert("players", playerColumns, []interface{}{5, "player5", "player5@email.com", emptyStats}),
+		spanner.Insert("players", playerColumns, []interface{}{1, "player1", "player1@email.com", "adsfijapfja3234aipj", emptyStats}),
+		spanner.Insert("players", playerColumns, []interface{}{2, "player2", "player2@email.com", "apoijawernipoav8210", emptyStats}),
+		spanner.Insert("players", playerColumns, []interface{}{3, "player3", "player3@email.com", "9asil23jifa82all3i1", emptyStats}),
+		spanner.Insert("players", playerColumns, []interface{}{4, "player4", "player4@email.com", "zmpoasiqamaf8wl1ioa", emptyStats}),
+		spanner.Insert("players", playerColumns, []interface{}{5, "player5", "player5@email.com", "adf80awenzlkzjfawif", emptyStats}),
 	}
 	_, err = client.Apply(ctx, m)
 	if err != nil {
