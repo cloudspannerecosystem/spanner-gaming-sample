@@ -70,7 +70,7 @@ func teardown(ctx context.Context, emulator *Emulator, service *Service) {
 
 func setupSpannerEmulator(ctx context.Context) (*Emulator, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "gcr.io/cloud-spanner-emulator/emulator:latest",
+		Image:        "gcr.io/cloud-spanner-emulator/emulator:1.5.0",
 		ExposedPorts: []string{"9010/tcp"},
 		Networks: []string{
 			TESTNETWORK,
@@ -174,22 +174,10 @@ func setupDatabase(ctx context.Context, ec Emulator) error {
 	// get schema statements from file
 	schema, _ := SCHEMAFILE.ReadFile("test_data/schema.sql")
 
-	// Removing NOT NULL constraints for columns we don't care about in item tests
-	schemaStringFix := strings.Replace(string(schema), "password_hash BYTES(60) NOT NULL,", "password_hash BYTES(60),", 1)
+	// Remove trailing semi-colon/newline so Emulator can parse DDL statements
+	schemaString := strings.TrimSuffix(string(schema), ";\n")
 
-	// TODO: Remove this when the Spanner Emulator supports 'DEFAULT' syntax; NOT NULL removed to avoid errors
-	// and most of those columns we don't use at the moment
-	schemaStringFix = strings.Replace(schemaStringFix, "account_balance NUMERIC NOT NULL DEFAULT (0.00),", "account_balance NUMERIC,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "acquire_time TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP()),", "acquire_time TIMESTAMP,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "created TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP()),", "created TIMESTAMP,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "expires TIMESTAMP NOT NULL DEFAULT (TIMESTAMP_ADD(CURRENT_TIMESTAMP(), interval 24 HOUR)),", "expires TIMESTAMP NOT NULL,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "visible BOOL NOT NULL DEFAULT(true),", "visible BOOL,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "active BOOL NOT NULL DEFAULT (true),", "active BOOL,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "cancelled BOOL NOT NULL DEFAULT (false),", "cancelled BOOL,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "filled BOOL NOT NULL DEFAULT (false),", "filled BOOL,", 1)
-	schemaStringFix = strings.Replace(schemaStringFix, "expired BOOL NOT NULL DEFAULT (false),", "expired BOOL,", 1)
-
-	schemaStatements := strings.Split(schemaStringFix, ";")
+	schemaStatements := strings.Split(schemaString, ";")
 
 	adminClient, err := database.NewDatabaseAdminClient(ctx)
 	if err != nil {
@@ -223,7 +211,7 @@ func loadTestData(ctx context.Context, ec Emulator) error {
 	}
 	defer client.Close()
 
-	playerColumns := []string{"playerUUID", "player_name", "email", "account_balance", "current_game"}
+	playerColumns := []string{"playerUUID", "player_name", "email", "password_hash", "account_balance", "current_game"}
 	gameColumns := []string{"gameUUID", "players", "created"}
 	gameItemColumns := []string{"itemUUID", "item_name", "item_value", "available_time", "duration"}
 	playerItemColumns := []string{"playerItemUUID", "playerUUID", "itemUUID", "price", "source", "game_session", "acquire_time", "visible"}
@@ -237,8 +225,8 @@ func loadTestData(ctx context.Context, ec Emulator) error {
 
 	m := []*spanner.Mutation{
 		spanner.Insert("games", gameColumns, []interface{}{gameUUID, []string{playerUUID[0], playerUUID[1]}, time.Now()}), // Adds 3 players to a game
-		spanner.Insert("players", playerColumns, []interface{}{playerUUID[0], "player1", "player1@email.com", "0.00", gameUUID}),
-		spanner.Insert("players", playerColumns, []interface{}{playerUUID[1], "player2", "player2@email.com", "10.00", gameUUID}),
+		spanner.Insert("players", playerColumns, []interface{}{playerUUID[0], "player1", "player1@email.com", "adsfijapfja3234aipj", "0.00", gameUUID}),
+		spanner.Insert("players", playerColumns, []interface{}{playerUUID[1], "player2", "player2@email.com", "apoijawernipoav8210", "10.00", gameUUID}),
 		spanner.Insert("game_items", gameItemColumns, []interface{}{itemUUID, "test_item", testItemPrice, time.Now(), 0}),
 		spanner.Insert("player_items", playerItemColumns, []interface{}{playerItemUUID, playerUUID[0], itemUUID, testItemPrice, "loot", gameUUID, time.Now(), true}),
 	}
