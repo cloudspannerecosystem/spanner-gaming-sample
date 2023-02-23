@@ -1,8 +1,8 @@
-name: Generator tests
+name: Workload tests
 on:
   pull_request:
     paths:
-      - 'generators/**'
+      - 'workloads/**'
 jobs:
   lint:
     name: Lint files
@@ -19,4 +19,5 @@ jobs:
       - name: Lint with pylint
         run: |
           pip install pylint
-          pylint generators/.
+          pylint workloads/.
+          pylint workloads/**/.
