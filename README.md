@@ -58,15 +58,7 @@ gcloud config set project <PROJECT_ID>
 
 > **NOTE:** You can find your PROJECT_ID in [Cloud Console](https://cloud.google.com/resource-manager/docs/creating-managing-projects#identifying_projects).
 
-Then, run the the `scripts/configure_project.sh` helper script to enable the following APIs in your project:
-
-- compute.googleapis.com
-- spanner.googleapis.com
-- cloudbuild.googleapis.com
-- container.googleapis.com
-- artifactregistry
-
-Once the APIs are enabled, you can set up the Spanner infrastructure using either the gcloud command line or Terraform. Instructions for both are below.
+Then you can set up the Spanner infrastructure using either the gcloud command line or Terraform. Instructions for both are below.
 
 > **NOTE:** The Terraform scripts also create a GKE Autopilot cluster.
 
@@ -107,7 +99,7 @@ gcloud auth application-default login
 terraform apply
 ```
 
-### Setup schema
+### Schema management
 Schema is managed by [Wrench](https://github.com/cloudspannerecosystem/wrench).
 
 After installing wrench, migrate the schema by running the `./scripts/schema.sh` file (replace project/instance/database information with what was used in terraform file):
@@ -128,7 +120,7 @@ To deploy to GKE, follow the [instructions here](./docs/GKE.md).
 
 Otherwise, follow the local deployment instructions for player profile and tradepost.
 
-Once the services are deployed you can use the generators to [run workloads](./generators/README.md).
+Once the services are deployed you can use the generators to [run workloads](./docs/workloads.md).
 
 Then follow the README to clean up based on whether you deployed with gcloud or Terraform.
 
@@ -274,7 +266,7 @@ make test-all
 
 > **NOTE:** The tests rely on [testcontainers-go](https://github.com/testcontainers/testcontainers-go), so [Docker](https://www.docker.com/) must be installed.
 
-## How to clean up
+## Cleaning up
 
 ### GCloud command line
 
@@ -286,14 +278,14 @@ gcloud spanner instances delete sample-instance
 
 ### Terraform
 
-If the Spanner instance was created using terraform, then from the `infrastructure` directory you can destroy the infrastructure.
+If the infrastructure was created using terraform, then from the `infrastructure` directory you can destroy the infrastructure.
 
 ```
 cd infrastructure
 terraform destroy
 ```
 
-### Clean up build and tests
+### Clean up builds and tests
 The Makefile provides a `make clean` command that removes the binaries and docker containers that were created as part of building and testing the services.
 
 ```
