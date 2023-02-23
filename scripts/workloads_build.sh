@@ -14,19 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# A convenience script to enable project services required for these samples.
-#
-# This is done via a shell script instead of terraform to avoid issues with
-# `terraform destroy` accidentally affecting other services in the project.
+# A convenience script to help developers easily submit service builds to Cloud Build
+if [ -z "${PROJECT_ID}" ]; then
+    echo "[ERROR] PROJECT_ID environment variable must be set" >&2
+    exit 1
+fi
 
+basedir=`pwd`
 
-for api in compute spanner cloudbuild container artifactregistry; do
-    apiDomain="${api}.googleapis.com"
-    echo "[INFO] Enabling $apiDomain"
-    gcloud services enable $apiDomain
+# Submit a build command to cloud build
+for service in profile matchmaking game tradepost; do
+    cd "${basedir}/workloads/${service}"
+    echo "[INFO] Building ${service}"
+    gcloud builds submit --tag gcr.io/$PROJECT_ID/${service}-generator .
 
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Enabling api failed...stopping further changes" >&2
+        echo "[ERROR] Build failed...stopping further builds" >&2
         exit 1
     fi
 done
