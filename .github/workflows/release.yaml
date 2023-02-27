@@ -24,7 +24,9 @@ jobs:
       - name: Build
         run: |
           make build-all
-          tar -czvf "$BINARY_NAME" README.md generators/README.md generators/*.py bin/*
+          rm workloads/.gitignore
+          rm workloads/**/Dockerfile
+          tar -czvf "$BINARY_NAME" README.md LICENSE workloads/* bin/*
       - name: Release Notes
         run:
           git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:* %h %s' --no-merges > ${{ github.workspace }}-CHANGELOG.md
