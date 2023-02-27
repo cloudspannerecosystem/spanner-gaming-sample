@@ -15,5 +15,6 @@ jobs:
       - name: Release Notes
         run:
           git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:* %h %s' --no-merges > ${{ github.workspace }}-CHANGELOG.md
+      - name: Check release notes
+        run:
           cat ${{ github.workspace }}-CHANGELOG.md
-
