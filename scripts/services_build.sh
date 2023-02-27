@@ -24,7 +24,7 @@ basedir=`pwd`
 
 # Submit a build command to
 for service in profile-service matchmaking-service item-service tradepost-service; do
-    cd "${basedir}/src/golang/${service}"
+    cd "${basedir}/backend_services/${service}"
     echo "[INFO] Building ${service}"
     gcloud builds submit --tag gcr.io/$PROJECT_ID/$service .
 

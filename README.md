@@ -128,7 +128,7 @@ Then follow the README to clean up based on whether you deployed with gcloud or 
 
 > **NOTE:** Skip this section if you deployed the services using [GKE](./docs/GKE.md)
 
-- Configure [`profile-service`](src/golang/profile-service) either by using environment variables or by copying the `profile-service/config.yml.template` file to `profile-service/config.yml`, and modify the Spanner connection details:
+- Configure [`profile-service`](./backend_services/profile-service) either by using environment variables or by copying the `profile-service/config.yml.template` file to `profile-service/config.yml`, and modify the Spanner connection details:
 
 ```
 # environment variables. change the YOUR_* values to your information
@@ -149,11 +149,11 @@ spanner:
 - Run the profile service. By default, this will run the service on localhost:8080.
 
 ```
-cd src/golang/profile-service
+cd ./backend_services/profile-service
 go run .
 ```
 
-- Configure the [matchmaking-service](src/golang/matchmaking-service) either by using environment variables or by copying the `matchmaking-service/config.yml.template` file to `matchmaking-service/config.yml`, and modify the Spanner connection details:
+- Configure the [matchmaking-service](./backend_services/matchmaking-service) either by using environment variables or by copying the `matchmaking-service/config.yml.template` file to `matchmaking-service/config.yml`, and modify the Spanner connection details:
 
 ```
 # environment variables
@@ -174,7 +174,7 @@ spanner:
 - Run the match-making service. By default, this will run the service on localhost:8081.
 
 ```
-cd src/golang/matchmaking-service
+cd ./backend_services/matchmaking-service
 go run .
 ```
 
@@ -182,7 +182,7 @@ go run .
 
 > **NOTE:** Skip this section if you deployed the services using [GKE](./docs/GKE.md)
 
-- Configure [`item-service`](src/golang/item-service) either by using environment variables or by copying the `item-service/config.yml.template` file to `item-service/config.yml`, and modify the Spanner connection details:
+- Configure [`item-service`](./backend_services/item-service) either by using environment variables or by copying the `item-service/config.yml.template` file to `item-service/config.yml`, and modify the Spanner connection details:
 
 ```
 # environment variables
@@ -203,11 +203,11 @@ spanner:
 - Run the item service. By default, this will run the service on localhost:8082.
 
 ```
-cd src/golang/item-service
+cd ./backend_services/item-service
 go run .
 ```
 
-- Configure the [tradepost-service](src/golang/tradepost-service) either by using environment variables or by copying the `tradepost-service/config.yml.template` file to `tradepost-service/config.yml`, and modify the Spanner connection details:
+- Configure the [tradepost-service](./backend_services/tradepost-service) either by using environment variables or by copying the `tradepost-service/config.yml.template` file to `tradepost-service/config.yml`, and modify the Spanner connection details:
 
 ```
 # environment variables
@@ -228,7 +228,7 @@ spanner:
 - Run the tradepost service. By default, this will run the service on localhost:8083.
 
 ```
-cd src/golang/tradepost-service
+cd ./backend_services/tradepost-service
 go run .
 ```
 

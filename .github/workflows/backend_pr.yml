@@ -3,7 +3,7 @@ name: Backend code tests
 on:
   pull_request:
     paths:
-      - 'src/**'
+      - 'backend_services/**'
 jobs:
   lint:
     name: Lint files
@@ -19,7 +19,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          working-directory: ./src/golang/${{matrix.service}}-service
+          working-directory: ./backend_services/${{matrix.service}}-service
           args: --timeout 120s --verbose
   test:
     name: Tests

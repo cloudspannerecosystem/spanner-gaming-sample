@@ -1,80 +1,106 @@
 BUILD_DIR=$(PWD)/bin
+
+.PHONY: profile
 profile:
 	echo "Building profile service"
-	mkdir -p ${BUILD_DIR} && cd src/golang/profile-service && GOOS=linux GOARCH=386 go build -o ${BUILD_DIR}/profile-service main.go
+	mkdir -p ${BUILD_DIR} \
+		&& cd backend_services/profile-service \
+		&& GOOS=linux GOARCH=386 go build -o ${BUILD_DIR}/profile-service main.go
 
+.PHONY: profile-test
 profile-test:
 	echo "Running unit tests for profile service"
-	cd src/golang/profile-service && go test -short ./...
+	cd backend_services/profile-service && go test -short ./...
 
+.PHONY: profile-test-integration
 profile-test-integration:
 	echo "Running integration tests for profile service"
-	cd src/golang/profile-service \
+	cd backend_services/profile-service \
 		&& docker build . -t profile-service \
 		&& mkdir -p test_data \
-		&& grep -v '^--*' ../../../schema/players.sql >test_data/schema.sql \
+		&& grep -v '^--*' ../../schema/players.sql >test_data/schema.sql \
 		&& go test --tags=integration ./...
 
+.PHONY: matchmaking
 matchmaking:
 	echo "Building matchmaking service"
-	mkdir -p ${BUILD_DIR} && cd src/golang/matchmaking-service && GOOS=linux GOARCH=386 go build -o ${BUILD_DIR}/matchmaking-service main.go
+	mkdir -p ${BUILD_DIR} \
+		&& cd backend_services/matchmaking-service \
+		&& GOOS=linux GOARCH=386 go build -o ${BUILD_DIR}/matchmaking-service main.go
 
+.PHONY: matchmaking-test
 matchmaking-test:
 	echo "Running unit tests for matchmaking service"
-	cd src/golang/matchmaking-service && go test -short ./...
+	cd backend_services/matchmaking-service && go test -short ./...
 
+.PHONY: matchmaking-test-integration
 matchmaking-test-integration:
 	echo "Running integration tests for matchmaking service"
-	cd src/golang/matchmaking-service \
+	cd backend_services/matchmaking-service \
 		&& docker build . -t matchmaking-service \
 		&& mkdir -p test_data \
-		&& grep -v '^--*' ../../../schema/players.sql >test_data/schema.sql \
+		&& grep -v '^--*' ../../schema/players.sql >test_data/schema.sql \
 		&& go test --tags=integration ./...
 
+.PHONY: item
 item:
 	echo "Building item service"
-	mkdir -p ${BUILD_DIR} && cd src/golang/item-service && GOOS=linux GOARCH=386 go build -o ${BUILD_DIR}/item-service main.go
+	mkdir -p ${BUILD_DIR} \
+		&& cd backend_services/item-service \
+		&& GOOS=linux GOARCH=386 go build -o ${BUILD_DIR}/item-service main.go
 
+.PHONY: item-test
 item-test:
 	echo "Running unit tests for item service"
-	cd src/golang/item-service && go test ./...
+	cd backend_services/item-service && go test ./...
 
+.PHONY: item-test-integration
 item-test-integration:
 	echo "Running integration tests for item service"
-	cd src/golang/item-service \
+	cd backend_services/item-service \
 		&& docker build . -t item-service \
 		&& mkdir -p test_data \
-		&& grep -v '^--*' ../../../schema/players.sql >test_data/schema.sql \
+		&& grep -v '^--*' ../../schema/players.sql >test_data/schema.sql \
 		&& echo ";" >> test_data/schema.sql \
-		&& grep -v '^--*' ../../../schema/trading.sql >> test_data/schema.sql \
+		&& grep -v '^--*' ../../schema/trading.sql >> test_data/schema.sql \
 		&& go test --tags=integration ./...
 
+.PHONY: tradepost
 tradepost:
 	echo "Building tradepost service"
-	mkdir -p ${BUILD_DIR} && cd src/golang/tradepost-service && GOOS=linux GOARCH=386 go build -o ${BUILD_DIR}/tradepost-service main.go
+	mkdir -p ${BUILD_DIR} \
+		&& cd backend_services/tradepost-service \
+		&& GOOS=linux GOARCH=386 go build -o ${BUILD_DIR}/tradepost-service main.go
 
+.PHONY: tradepost-test
 tradepost-test:
 	echo "Running unit tests for tradepost service"
-	cd src/golang/tradepost-service && go test ./...
+	cd backend_services/tradepost-service && go test ./...
 
+.PHONY: tradepost-test-integration
 tradepost-test-integration:
 	echo "Running integration tests for tradepost service"
-	cd src/golang/tradepost-service \
+	cd backend_services/tradepost-service \
 		&& mkdir -p test_data \
 		&& docker build . -t tradepost-service \
-		&& grep -v '^--*' ../../../schema/players.sql >test_data/schema.sql \
+		&& grep -v '^--*' ../../schema/players.sql >test_data/schema.sql \
 		&& echo ";" >> test_data/schema.sql \
-		&& grep -v '^--*' ../../../schema/trading.sql >> test_data/schema.sql \
+		&& grep -v '^--*' ../../schema/trading.sql >> test_data/schema.sql \
 		&& go test --tags=integration ./...
 
+.PHONY: test-all-unit
 test-all-unit: profile-test matchmaking-test item-test tradepost-test
 
+.PHONY: test-all-integration
 test-all-integration: profile-test-integration matchmaking-test-integration item-test-integration tradepost-test-integration
 
+.PHONY: test-all
 test-all: test-all-unit test-all-integration
 
+.PHONY: build-all
 build-all: profile matchmaking item tradepost
 
+.PHONY: clean
 clean:
 	echo "Running cleanup"
 	rm bin/*
