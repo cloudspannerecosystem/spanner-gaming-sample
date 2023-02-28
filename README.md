@@ -46,10 +46,6 @@ The Cloud Spanner schema that supports the backend services looks like this.
 
 ### Setup infrastructure
 
-You can either set up the Spanner infrastructure using the gcloud command line or Terraform. Instructions for both are below.
-
-> **NOTE:** The Terraform scripts also create a GKE Autopilot cluster.
-
 Before you set up the infrastructure, it is important to enable the appropriate APIs using the gcloud command line.
 
 You must [install and configure gcloud](https://cloud.google.com/sdk/docs/install-sdk).
