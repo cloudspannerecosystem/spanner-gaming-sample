@@ -60,11 +60,67 @@ func getPlayerByID(c *gin.Context) {
 
 	player, err := models.GetPlayerByUUID(ctx, client, playerUUID)
 	if err != nil {
+		fmt.Printf("Error: %s", err)
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "player not found"})
 		return
 	}
 
 	c.IndentedJSON(http.StatusOK, player)
+}
+
+// playerLogin responds to the PUT /players/login endpoint
+// Login requires 'email' and 'password'
+// Returns player's information on successful login. Returns 404 on failed login.
+func playerLogin(c *gin.Context) {
+	type PlayerLogin struct {
+		Email    string `json:"email" validate:"required_with=Password"`
+		Password string `json:"password" validate:"required_with=Email"`
+	}
+	var pLogin PlayerLogin
+
+	// Bind the request with the player
+	if err := c.BindJSON(&pLogin); err != nil {
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
+		return
+	}
+
+	// Try to login
+	ctx, client := getSpannerConnection(c)
+	playerUUID, err := models.PlayerLogin(ctx, client, pLogin.Email, pLogin.Password)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "player not found"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, playerUUID)
+}
+
+// playerLogout responds to the PUT /players/logout endpoint
+// Return an empty response with a 200 code.
+func playerLogout(c *gin.Context) {
+	var player models.Player
+
+	// Bind the request with the player
+	if err := c.BindJSON(&player); err != nil {
+		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
+			fmt.Printf("could not abort: %s", err)
+		}
+		return
+	}
+
+	// Try to logout
+	ctx, client := getSpannerConnection(c)
+	err := player.PlayerLogout(ctx, client)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "could not log player out"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "player logged out"})
 }
 
 // createPlayer responds to the POST /players endpoint
@@ -73,18 +129,14 @@ func createPlayer(c *gin.Context) {
 	var player models.Player
 
 	if err := c.BindJSON(&player); err != nil {
-		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
-			fmt.Printf("could not abort: %s", err)
-		}
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
 	ctx, client := getSpannerConnection(c)
 	err := player.AddPlayer(ctx, client)
 	if err != nil {
-		if err := c.AbortWithError(http.StatusBadRequest, err); err != nil {
-			fmt.Printf("could not abort: %s", err)
-		}
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
@@ -106,8 +158,8 @@ func main() {
 
 	router.POST("/players", createPlayer)
 	router.GET("/players/:id", getPlayerByID)
-	// TODO: Codelab takers should implement getPlayerBylogin function
-	// router.GET("/player/login", getPlayerByLogin)
+	router.PUT("/players/login", playerLogin)
+	router.PUT("/players/logout", playerLogout)
 
 	if err := router.Run(configuration.Server.URL()); err != nil {
 		fmt.Printf("could not run gin router: %s", err)

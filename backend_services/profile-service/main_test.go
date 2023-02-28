@@ -31,6 +31,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
 	instancepb "google.golang.org/genproto/googleapis/spanner/admin/instance/v1"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -238,6 +239,36 @@ func setupService(ctx context.Context, ec *Emulator) (*Service, error) {
 	}, nil
 }
 
+func httpPUT(url string, data io.Reader) (*http.Response, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodPut, url, data)
+	if err != nil {
+		return nil, err
+	}
+	// set the request header Content-Type for json
+	req.Header.Set("Content-Type", "application/json")
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+type TestPlayer struct {
+	Player_name string `json:"player_name"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+}
+
+var test_players = []TestPlayer{
+	{
+		Email:       "test@gmail.com",
+		Password:    "insecure_password",
+		Player_name: "test player",
+	},
+}
+
 var playerUUIDs []string
 
 func TestMain(m *testing.M) {
@@ -273,20 +304,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAddPlayers(t *testing.T) {
-	type TestPlayer struct {
-		Player_name string `json:"player_name"`
-		Email       string `json:"email"`
-		Password    string `json:"password"`
-	}
-	var players = []TestPlayer{
-		{
-			Email:       "test@gmail.com",
-			Password:    "insecure_password",
-			Player_name: "test player",
-		},
-	}
-
-	for _, p := range players {
+	for _, p := range test_players {
 		pJson, err := json.Marshal(p)
 		assert.Nil(t, err)
 
@@ -334,7 +352,76 @@ func TestGetPlayers(t *testing.T) {
 
 			assert.NotEmpty(t, pData.PlayerUUID)
 			assert.NotEmpty(t, pData.Email)
+			assert.False(t, pData.Is_logged_in)
 			assert.NotEmpty(t, pData.Stats)
+		}
+	}
+}
+
+func TestPlayerLogin(t *testing.T) {
+	for _, p := range test_players {
+		pJson, err := json.Marshal(p)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		// check good password
+		response, err := httpPUT("http://localhost/players/login", bytes.NewBuffer(pJson))
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		assert.Equal(t, 200, response.StatusCode)
+
+		// Check playerUUID from response validate player is_logged_in=true
+		var pUUID string
+		body, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		json.Unmarshal(body, &pUUID)
+
+		response, err = http.Get(fmt.Sprintf("http://localhost/players/%s", pUUID))
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		body, err = ioutil.ReadAll(response.Body)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		var pData models.Player
+		json.Unmarshal(body, &pData)
+
+		assert.True(t, pData.Is_logged_in)
+
+		// check bad password
+		new_player := p
+		new_player.Password = "wrong password"
+
+		pJson, err = json.Marshal(new_player)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		// check good password
+		response, err = httpPUT("http://localhost/players/login", bytes.NewBuffer(pJson))
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		assert.Equal(t, 404, response.StatusCode)
+	}
+}
+
+func TestPlayerLogout(t *testing.T) {
+	// For each added uuid, get that data and validate response code (assuming the result was not empty)
+	if len(playerUUIDs) != 0 {
+		for _, pUUID := range playerUUIDs {
+			response, err := http.Get(fmt.Sprintf("http://localhost/players/%s", pUUID))
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+			assert.Equal(t, 200, response.StatusCode)
 		}
 	}
 }

@@ -30,14 +30,14 @@ CREATE TABLE players (
   updated TIMESTAMP,
   stats JSON,
   account_balance NUMERIC NOT NULL DEFAULT (0.00),
-  is_logged_in BOOL,
+  is_logged_in BOOL NOT NULL DEFAULT (false),
   last_login TIMESTAMP,
   valid_email BOOL,
   current_game STRING(36),
   FOREIGN KEY (current_game) REFERENCES games (gameUUID),
 ) PRIMARY KEY(playerUUID);
 
-CREATE UNIQUE INDEX PlayerAuthentication ON players(email) STORING (password_hash);
+CREATE UNIQUE INDEX PlayerAuthentication ON players(email) STORING (password_hash, is_logged_in);
 
 CREATE INDEX PlayerGame ON players(current_game);
 

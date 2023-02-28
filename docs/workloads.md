@@ -31,7 +31,7 @@ pip3 install -r requirements.txt
 ## Using the workload generators
 The provided workload generators do the following:
 
-- _authentication\_server.py_: mimics player signup and player retrieval by UUID. Login is not handled currently due to the necessity to track password creation.
+- _authentication\_server.py_: mimics player signup, player logins, player retrieval by UUID and player logins
 
 Run on the CLI:
 ```
