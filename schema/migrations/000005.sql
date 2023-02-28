@@ -1,4 +1,4 @@
--- Copyright 2022 Google LLC
+-- Copyright 2023 Google LLC
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -13,13 +13,7 @@
 -- limitations under the License.
 --
 
-CREATE TABLE games (
-	gameUUID string(36) NOT NULL,
-	players ARRAY<STRING(36)> NOT NULL,
-	winner STRING(36),
-	created TIMESTAMP,
-	finished TIMESTAMP
-) PRIMARY KEY (gameUUID);
+DROP INDEX PlayerAuthentication;
+CREATE UNIQUE INDEX PlayerAuthentication ON players(email) STORING (password_hash, is_logged_in);
 
-ALTER TABLE players
-	ADD FOREIGN KEY (current_game) REFERENCES games (gameUUID);
+ALTER TABLE players ALTER is_logged_in BOOL NOT NULL DEFAULT (false);

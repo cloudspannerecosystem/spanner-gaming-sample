@@ -19,6 +19,7 @@ package models
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -48,7 +49,7 @@ type Player struct {
 	Stats           spanner.NullJSON `json:"stats"`
 	Account_balance big.Rat          `json:"account_balance"`
 	last_login      time.Time        //lint:ignore U1000 Field is present to map to database schema
-	is_logged_in    bool             //lint:ignore U1000 Field is present to map to database schema
+	Is_logged_in    bool             `json:"is_logged_in"`
 	valid_email     bool             //lint:ignore U1000 Field is present to map to database schema
 	Current_game    string           `json:"current_game" validate:"omitempty,uuid4"`
 }
@@ -155,7 +156,7 @@ func (p *Player) AddPlayer(ctx context.Context, client spanner.Client) error {
 // retrieving the player, an empty Player is returned with the error.
 func GetPlayerByUUID(ctx context.Context, client spanner.Client, uuid string) (Player, error) {
 	row, err := client.Single().ReadRow(ctx, "players",
-		spanner.Key{uuid}, []string{"playerUUID", "player_name", "email", "stats"})
+		spanner.Key{uuid}, []string{"playerUUID", "player_name", "email", "is_logged_in", "stats"})
 	if err != nil {
 		return Player{}, err
 	}
@@ -169,8 +170,77 @@ func GetPlayerByUUID(ctx context.Context, client spanner.Client, uuid string) (P
 	return player, nil
 }
 
-// Getting player by login information
-// Uses player name and password. Should return an error if no player was found
-// func GetPlayerByLogin(name string, password string) (Player, error) {
+// PlayerLogin logs the player in provided when player email and password. Updates the
+// user login info if found. Should return an error if no player was found.
+func PlayerLogin(ctx context.Context, client spanner.Client, email string, password string) (string, error) {
+	// Get the player based on email
+	row, err := client.Single().ReadRowUsingIndex(ctx, "players", "PlayerAuthentication",
+		spanner.Key{email}, []string{"playerUUID", "email", "password_hash", "is_logged_in"})
+	if err != nil {
+		return "", err
+	}
 
-// }
+	player := Player{}
+	err = row.ToStruct(&player)
+	if err != nil {
+		return "", err
+	}
+
+	// Validate that the password is correct. If it's not, return error
+	pwdErr := validatePassword(password, player.Password_hash)
+	if pwdErr != nil {
+		return "", pwdErr
+	}
+
+	// Validate that the player is not already logged in. If they are, return success.
+	if player.Is_logged_in {
+		return player.PlayerUUID, nil
+	}
+
+	// If we've made it this far, update player to login
+	_, err = client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		// Example of using DML to update a row.
+		stmt := spanner.Statement{
+			SQL: `UPDATE players SET is_logged_in=true, last_login=CURRENT_TIMESTAMP()
+				WHERE playerUUID=@playerUUID`,
+			Params: map[string]interface{}{
+				"playerUUID": player.PlayerUUID,
+			},
+		}
+
+		_, err := txn.Update(ctx, stmt)
+		return err
+	})
+
+	if err != nil {
+		fmt.Printf("SQL Error: %s", err)
+		return "", err
+	}
+
+	return player.PlayerUUID, nil
+}
+
+// PlayerLogout logs the player out when provided a player UUID. Returns an error if no player was found
+func (p *Player) PlayerLogout(ctx context.Context, client spanner.Client) error {
+	fmt.Printf("Player UUID: %s\n", p.PlayerUUID)
+
+	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		// Example of using mutations to update a row
+		var m []*spanner.Mutation
+		pCols := []string{"playerUUID", "is_logged_in"}
+		m = append(m, spanner.Update("players", pCols, []interface{}{p.PlayerUUID, false}))
+
+		if err := txn.BufferWrite(m); err != nil {
+			return fmt.Errorf("could not buffer write: %s", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		fmt.Printf("SQL Error: %s", err)
+		return err
+	}
+
+	return nil
+}

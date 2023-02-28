@@ -56,15 +56,21 @@ func TestHashPassword(t *testing.T) {
 
 	for _, pass := range tests {
 		hash, err := hashPassword(pass)
-
 		assert.Nil(t, err)
 
 		err = validatePassword(pass, hash)
-
 		assert.Nil(t, err)
-
 	}
+}
 
+func TestInvalidPassword(t *testing.T) {
+	var pass = "som1pass"
+
+	hash, err := hashPassword(pass)
+	assert.Nil(t, err)
+
+	err = validatePassword("mypass", hash)
+	assert.NotNil(t, err)
 }
 
 func TestGenerateUUID(t *testing.T) {
