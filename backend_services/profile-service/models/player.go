@@ -170,9 +170,8 @@ func GetPlayerByUUID(ctx context.Context, client spanner.Client, uuid string) (P
 	return player, nil
 }
 
-// Player Login
-// Uses player name and password. Updates the user login info if found.
-// Should return an error if no player was found
+// PlayerLogin logs the player in provided when player email and password. Updates the
+// user login info if found. Should return an error if no player was found.
 func PlayerLogin(ctx context.Context, client spanner.Client, email string, password string) (string, error) {
 	// Get the player based on email
 	row, err := client.Single().ReadRowUsingIndex(ctx, "players", "PlayerAuthentication",
@@ -221,8 +220,7 @@ func PlayerLogin(ctx context.Context, client spanner.Client, email string, passw
 	return player.PlayerUUID, nil
 }
 
-// Player Logout
-// Uses player uuid. Should return an error if no player was found
+// PlayerLogout logs the player out when provided a player UUID. Returns an error if no player was found
 func (p *Player) PlayerLogout(ctx context.Context, client spanner.Client) error {
 	fmt.Printf("Player UUID: %s\n", p.PlayerUUID)
 
