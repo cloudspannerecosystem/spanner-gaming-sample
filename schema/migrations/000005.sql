@@ -16,4 +16,4 @@
 DROP INDEX PlayerAuthentication;
 CREATE UNIQUE INDEX PlayerAuthentication ON players(email) STORING (password_hash, is_logged_in);
 
-ALTER TABLE players ALTER is_logged_in BOOL NOT NULL DEFAULT (false);
+ALTER TABLE players ALTER COLUMN is_logged_in BOOL NOT NULL DEFAULT (false);

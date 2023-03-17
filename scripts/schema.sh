@@ -17,4 +17,13 @@
 # A convenience script to help developers easily set up emulator, finapp server
 # and workload.
 
+if [ -z "${SPANNER_PROJECT_ID}" ] || \
+   [ -z "${SPANNER_INSTANCE_ID}" ] || \
+   [ -z "${SPANNER_DATABASE_ID}" ]
+then
+    echo "[ERROR] Environment variables must be set: " >&2
+    echo " SPANNER_PROJECT_ID, SPANNER_INSTANCE_ID, and SPANNER_DATABSE_ID" >&2
+    exit 1
+fi
+
 wrench migrate up --directory ./schema

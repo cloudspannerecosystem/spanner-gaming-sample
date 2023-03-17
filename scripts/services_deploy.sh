@@ -15,14 +15,24 @@
 # limitations under the License.
 #
 # A convenience script to help developers easily deploy services to GKE cluster
-if [ -z "${PROJECT_ID}" ]; then
-    echo "[ERROR] PROJECT_ID environment variable must be set" >&2
+if [ -z "${PROJECT_ID}" ] || \
+   [ -z "${SPANNER_INSTANCE_ID}" ] || \
+   [ -z "${SPANNER_DATABASE_ID}" ]
+then
+    echo "[ERROR] Environment variables must be set: " >&2
+    echo " PROJECT_ID, SPANNER_INSTANCE_ID, and SPANNER_DATABSE_ID" >&2
     exit 1
 fi
 
 basedir=`pwd`
 
 cd "${basedir}/kubernetes-manifests"
+
+echo "[INFO] Adding spanner-config"
+sed "s/GCP_PROJECT_ID/${PROJECT_ID}/" "spanner_config.yaml.tmpl" > "spanner_config.yaml"
+sed -i "s/SPANNER_INSTANCE_ID/${SPANNER_INSTANCE_ID}/" spanner_config.yaml
+sed -i "s/SPANNER_DATABASE_ID/${SPANNER_DATABASE_ID}/" spanner_config.yaml
+kubectl apply -f "spanner_config.yaml"
 
 # Submit a kubectl apply for each deployment file
 for service in profile-service matchmaking-service item-service tradepost-service; do
