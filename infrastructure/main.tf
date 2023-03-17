@@ -42,6 +42,8 @@ data "google_client_config" "provider" {}
 data "google_container_cluster" "gke-provider" {
   name     = var.gke_config.cluster_name
   location = var.gke_config.location
+
+  depends_on = [ google_container_cluster.sample-game-gke ]
 }
 
 provider "kubernetes" {
