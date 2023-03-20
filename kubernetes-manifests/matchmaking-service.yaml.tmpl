@@ -17,7 +17,7 @@ kind: Service
 metadata:
   name: matchmaking
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: cymbal-games-matchmaking
   ports:

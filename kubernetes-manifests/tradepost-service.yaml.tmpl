@@ -17,7 +17,7 @@ kind: Service
 metadata:
   name: tradepost
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: cymbal-games-tradepost
   ports:
