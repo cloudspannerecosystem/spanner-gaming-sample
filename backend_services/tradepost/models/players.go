@@ -108,7 +108,7 @@ func (p *Player) GetBalance(ctx context.Context, txn *spanner.ReadWriteTransacti
 }
 
 // UpdateBalance updates a player's balance, and adds an entry into the player ledger
-func (p *Player) UpdateBalance(ctx context.Context, txn *spanner.ReadWriteTransaction, newAmount big.Rat) error {
+func (p *Player) UpdateBalance(txn *spanner.ReadWriteTransaction, newAmount big.Rat) error {
 	// This modifies player's AccountBalance, which is used to update the player entry
 	p.AccountBalance.Add(&p.AccountBalance, &newAmount)
 
