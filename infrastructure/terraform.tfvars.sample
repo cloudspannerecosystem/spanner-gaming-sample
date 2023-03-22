@@ -14,20 +14,15 @@
 
 gcp_project = "PROJECT"
 
-gcp_project_services = [
-  "clouddeploy.googleapis.com",
-  "cloudbuild.googleapis.com",
-  "container.googleapis.com",
-  "artifactregistry.googleapis.com"
-]
+resource_env_label = "spanner-game-demo"
 
 spanner_config = {
-    instance_name     = "sample-instance"
-    database_name     = "sample-game"
-    configuration     = "regional-us-central1"
-    display_name      = "gaming spanner instance"
-    processing_units  = 100
-    environment       = "staging"
+    instance_name       = "sample-instance"
+    database_name       = "sample-game"
+    configuration       = "regional-us-central1"
+    display_name        = "gaming spanner instance"
+    processing_units    = 100
+    deletion_protection = true
 }
 
 backend_sa_config = {
@@ -45,4 +40,14 @@ gke_config = {
     }
 }
 
+# Artifact Registry variables
+artifact_registry_config = {
+    id = "spanner-game-images"
+    location = "us"
+}
 
+# Cloud Deploy Configuration
+clouddeploy_config = {
+    pipeline_name = "sample-game-services"
+    location = "us-central1"
+}

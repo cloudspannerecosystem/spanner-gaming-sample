@@ -15,11 +15,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: profile-workload
+  name: matchmaking-workload
 spec:
   type: LoadBalancer
   selector:
-    app: cymbal-games-profile-workload
+    app: matchmaking-workload
   ports:
   - port: 8089
     targetPort: 8089
@@ -27,21 +27,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cymbal-games-profile-workload
+  name: matchmaking-workload
 spec:
   replicas: 1 # EDIT: Number of instances of deployment
   selector:
     matchLabels:
-      app: cymbal-games-profile-workload
+      app: matchmaking-workload
   template:
     metadata:
       labels:
-        app: cymbal-games-profile-workload
+        app: matchmaking-workload
     spec:
       serviceAccountName: k8s-service-account
       containers:
-      - name: profile-workload
-        image: gcr.io/GCP_PROJECT_ID/profile-generator:latest # EDIT: Your GCP Project ID
+      - name: matchmaking-workload
+        image: matchmaking-workload
         ports:
           - containerPort: 8089
         resources:

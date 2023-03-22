@@ -15,11 +15,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: tradepost-workload
+  name: profile-workload
 spec:
   type: LoadBalancer
   selector:
-    app: cymbal-games-tradepost-workload
+    app: profile-workload
   ports:
   - port: 8089
     targetPort: 8089
@@ -27,21 +27,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cymbal-games-tradepost-workload
+  name: profile-workload
 spec:
   replicas: 1 # EDIT: Number of instances of deployment
   selector:
     matchLabels:
-      app: cymbal-games-tradepost-workload
+      app: profile-workload
   template:
     metadata:
       labels:
-        app: cymbal-games-tradepost-workload
+        app: profile-workload
     spec:
       serviceAccountName: k8s-service-account
       containers:
-      - name: tradepost-workload
-        image: gcr.io/GCP_PROJECT_ID/tradepost-generator:latest # EDIT: Your GCP Project ID
+      - name: profile-workload
+        image: profile-workload
         ports:
           - containerPort: 8089
         resources:

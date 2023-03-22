@@ -17,22 +17,26 @@ resource "google_spanner_instance" "instance" {
   config           = var.spanner_config.configuration
   display_name     = var.spanner_config.display_name
   processing_units = var.spanner_config.processing_units
-  labels           = { "env" = var.spanner_config.environment }
+  labels           = {
+    "env" = var.resource_env_label
+  }
 }
 
 resource "google_spanner_database" "database" {
-  instance = google_spanner_instance.instance.name
-  name     = var.spanner_config.database_name
-  deletion_protection = true
+  instance            = google_spanner_instance.instance.name
+  name                = var.spanner_config.database_name
+  deletion_protection = var.spanner_config.deletion_protection
 }
 
-# Create IAM service account for locked down cloud run container to access Spanner service
-resource "google_spanner_database_iam_binding" "backend_iam_spanner" {
-  instance = google_spanner_instance.instance.name
-  database = google_spanner_database.database.name
-  role     = "roles/spanner.databaseUser"
-
-  members = [
-    "serviceAccount:${google_service_account.backend_sa.email}",
-  ]
+# Make Config file for deploy with Cloud Deploy
+resource "local_file" "spanner-config" {
+  content = templatefile(
+    "${path.module}/files/backend_services/spanner-config.yaml.tpl", {
+      project_id    = var.gcp_project
+      instance_id   = google_spanner_instance.instance.name
+      database_id   = google_spanner_database.database.name
+  })
+  filename = "${path.module}/${var.services_directory}/spanner_config.yaml"
+  depends_on = [ google_spanner_instance.instance, google_spanner_database.database]
 }
+

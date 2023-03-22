@@ -13,45 +13,30 @@
 // limitations under the License.
 
 resource "google_container_cluster" "sample-game-gke" {
-  name     = var.gke_config.cluster_name
-  location = var.gke_config.location
+  name              = var.gke_config.cluster_name
+  location          = var.gke_config.location
+  network           = google_compute_network.vpc.name
+  subnetwork        = google_compute_subnetwork.subnet.name
 
-  network    = google_compute_network.vpc.name
-  subnetwork = google_compute_subnetwork.subnet.name
+  # Enabling Autopilot for this cluster
+  enable_autopilot  = true
 
   # See issue: https://github.com/hashicorp/terraform-provider-google/issues/10782
   ip_allocation_policy {}
-
-  # Enabling Autopilot for this cluster
-  enable_autopilot = true
 }
 
-resource "google_service_account" "backend_sa" {
-  account_id   = var.backend_sa_config.name
-  display_name = var.backend_sa_config.description
-  project    = var.gcp_project
+data "google_container_cluster" "gke-provider" {
+  name        = var.gke_config.cluster_name
+  location    = var.gke_config.location
+
+  depends_on  = [ google_container_cluster.sample-game-gke ]
 }
 
-resource "kubernetes_service_account" "k8s-service-account" {
-  metadata {
-    name      = var.k8s_service_account_id
-    namespace = "default"
-    annotations = {
-      "iam.gke.io/gcp-service-account" : "${google_service_account.backend_sa.email}"
-    }
-  }
+provider "kubernetes" {
+  host  = "https://${data.google_container_cluster.gke-provider.endpoint}"
+  token = data.google_client_config.provider.access_token
+  cluster_ca_certificate = base64decode(
+    data.google_container_cluster.gke-provider.master_auth[0].cluster_ca_certificate,
+  )
 }
 
-data "google_iam_policy" "spanner-policy" {
-  binding {
-    role = "roles/iam.workloadIdentityUser"
-    members = [
-      "serviceAccount:${var.gcp_project}.svc.id.goog[default/${kubernetes_service_account.k8s-service-account.metadata[0].name}]"
-    ]
-  }
-}
-
-resource "google_service_account_iam_policy" "backend-service-account-iam" {
-  service_account_id = google_service_account.backend_sa.name
-  policy_data        = data.google_iam_policy.spanner-policy.policy_data
-}

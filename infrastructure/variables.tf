@@ -16,14 +16,20 @@ variable "gcp_project" {
   type = string
 }
 
+variable "resource_env_label" {
+  type        = string
+  description = "Label/Tag to apply to resources"
+}
+
+
 variable "spanner_config" {
   type = object({
-    instance_name     = string
-    database_name     = string
-    configuration     = string
-    display_name      = string
-    processing_units  = number
-    environment       = string
+    instance_name       = string
+    database_name       = string
+    configuration       = string
+    display_name        = string
+    processing_units    = number
+    deletion_protection = bool
   })
   description = "The configuration specifications for the Spanner instance"
 
@@ -41,7 +47,13 @@ variable "spanner_config" {
 variable "gcp_project_services" {
   type        = list(any)
   description = "GCP Service APIs (<api>.googleapis.com) to enable for this project"
-  default     = []
+  default     = [
+    "artifactregistry.googleapis.com",
+    "clouddeploy.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "container.googleapis.com",
+    "spanner.googleapis.com"
+  ]
 }
 
 variable "gke_config" {
@@ -64,4 +76,40 @@ variable backend_sa_config {
 
 variable "k8s_service_account_id" {
   description = "The kubernetes service account that will impersonate the IAM service account to access Cloud Spanner. This account will be created."
+}
+
+### Artifact Registry Variables ###
+
+variable "artifact_registry_config" {
+  type = object({
+    id       = string
+    location = string
+  })
+}
+
+### Cloud Deploy Variables ###
+
+variable "clouddeploy_config" {
+  type = object({
+    pipeline_name = string
+    location      = string
+  })
+}
+
+variable "skaffold_version" {
+  type        = string
+  description = "Version of skaffold to use for Cloud Build files"
+  default     = "1.39"
+}
+
+variable "services_directory" {
+  type        = string
+  description = "Directory where backend services are found; used by Cloud Deploy"
+  default     = "../backend_services" # Relative to Terraform directory
+}
+
+variable "workload_directory" {
+  type        = string
+  description = "Directory where workload generators are found; used by Cloud Deploy"
+  default     = "../workloads" # Relative to Terraform directory
 }

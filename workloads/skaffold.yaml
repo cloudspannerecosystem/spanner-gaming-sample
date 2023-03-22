@@ -12,5 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-**/__pycache__/**
-cloudbuild.yaml
+apiVersion: skaffold/v2beta29
+kind: Config
+deploy:
+  kubectl:
+    manifests:
+      - profile/deployment.yaml
+      - matchmaking/deployment.yaml
+      - game/deployment.yaml
+      - tradepost/deployment.yaml

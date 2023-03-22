@@ -2,7 +2,7 @@
 
 You can run these workloads either locally or on GKE.
 
-Either way before the workloads can be used, first deploy the [services onto GKE](../docs/GKE.md).
+Either way before the workloads can be used, first deploy the services according to the [README](../README.md).
 
 > **NOTE:** The GKE instructions also include deploying the workloads on GKE.
 
