@@ -156,7 +156,7 @@ func GetOpenGame(ctx context.Context, client spanner.Client) (Game, error) {
 // Updating players involves closing out the game (current_game = NULL) and
 // updating their game stats. Specifically, we are incrementing games_played.
 // If the player is the determined winner, then their games_won stat is incremented.
-func (g Game) updateGamePlayers(ctx context.Context, players []Player, txn *spanner.ReadWriteTransaction) error {
+func (g Game) updateGamePlayers(txn *spanner.ReadWriteTransaction, players []Player) error {
 	for _, p := range players {
 		// Modify stats
 		var pStats PlayerStats
@@ -308,7 +308,7 @@ func (g *Game) CloseGame(ctx context.Context, client spanner.Client) error {
 
 			// Update each player to increment stats.games_played (and stats.games_won if winner),
 			// and set current_game to null so they can be chosen for a new game
-			if err := g.updateGamePlayers(ctx, players, txn); err != nil {
+			if err := g.updateGamePlayers(txn, players); err != nil {
 				return err
 			}
 

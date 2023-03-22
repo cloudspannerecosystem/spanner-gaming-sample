@@ -1,6 +1,11 @@
 linters:
   enable:
     - revive
+linters-settings:
+  revive:
+    rules:
+      - name: if-return
+        disabled: true
 
 issues:
   include:
