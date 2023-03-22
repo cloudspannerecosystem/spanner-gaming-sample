@@ -44,6 +44,15 @@ The Cloud Spanner schema that supports the backend services looks like this.
 
 ## How to use this demo
 
+This demo is meant to show you a working application with load against a Cloud Spanner database. To use this, you must:
+- Set up the infrastructure using either the below options
+  - Terraform to get a complete Spanner, GKE Autopilot and Cloud Deploy setup in your project
+  - gcloud command line to get a minimal setup of Cloud Spanner. Services and workloads will run locally.
+- Deploy the services
+- Deploy the workload generators
+- Generate load and observe Cloud Spanner behavior.
+- Clean up based on whether you deployed with gcloud or Terraform.
+
 ### Setup infrastructure
 
 Before you set up the infrastructure, it is important to enable the appropriate APIs using the gcloud command line.
@@ -59,8 +68,6 @@ gcloud config set project <PROJECT_ID>
 > **NOTE:** You can find your PROJECT_ID in [Cloud Console](https://cloud.google.com/resource-manager/docs/creating-managing-projects#identifying_projects).
 
 Then you can set up the Spanner infrastructure using either the gcloud command line or Terraform. Instructions for both are below.
-
-> **NOTE:** The Terraform scripts also create a GKE Autopilot cluster.
 
 #### Gcloud command line
 
@@ -79,7 +86,9 @@ A terraform file is provided that creates the appropriate resources for these sa
 
 Resources that are created:
 - Spanner instance and database based on user variables in main.tfvars
-- [GKE cluster](./docs/GKE.md) to run the services
+- GKE cluster to run the services
+- Artifact Registry to store the images for the services and the workloads
+- Cloud Deploy pipeline to deploy the services and workloads to the GKE cluster
 
 To set up the infrastructure, do the following:
 
@@ -110,161 +119,56 @@ export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
 export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
 ./scripts/schema.sh
 ```
-
 > **NOTE:** The schema must be in place for the services to work. Do not skip this step!
 
-### Deploy services
-You can deploy the services to the GKE cluster that was configured by Terraform, or you can deploy them locally.
+### Deployment
+You can deploy the services and workloads to the GKE cluster that was configured by Terraform, or you can deploy them locally.
 
-To deploy to GKE, follow the [instructions here](./docs/GKE.md).
+To deploy locally, follow the [instructions here](./docs/local.md).
 
-Otherwise, follow the local deployment instructions for player profile and tradepost.
+#### Deploy services to GKE
 
-Once the services are deployed you can use the generators to [run workloads](./docs/workloads.md).
+> **NOTE:** Deployment to GKE requires the Terraform setup have been completed above.
 
-Then follow the README to clean up based on whether you deployed with gcloud or Terraform.
+To deploy the services to GKE, use `gcloud build` from the `backend_services` directory:
 
-#### Local player profile deployment
-
-> **NOTE:** Skip this section if you deployed the services using [GKE](./docs/GKE.md)
-
-- Configure [`profile-service`](./backend_services/profile-service) either by using environment variables or by copying the `profile-service/config.yml.template` file to `profile-service/config.yml`, and modify the Spanner connection details:
-
-```
-# environment variables. change the YOUR_* values to your information
-export SPANNER_PROJECT_ID=YOUR_PROJECT_ID
-export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
-export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
+```bash
+cd backend_services
+gcloud builds submit --config=cloudbuild.yaml
 ```
 
-```
-# config.yml spanner connection details. change the YOUR_* values to your information
-spanner:
-  project_id: YOUR_PROJECT_ID
-  instance_id: YOUR_INSTANCE_ID
-  database_id: YOUR_DATABASE_ID
+> **NOTE:** If the `cloudbuild.yaml` file doesn't exist in this directory, make sure to run the Terraform setup step again.
 
-```
+Once the services are deployed you can deploy the workloads to GKE.
 
-- Run the profile service. By default, this will run the service on localhost:8080.
+#### Deploy workloads to GKE
 
-```
-cd ./backend_services/profile-service
-go run .
+To deploy the workloads to GKE, use `gcloud build` from the `workloads` directory:
+
+```bash
+cd workloads
+gcloud builds submit --config=cloudbuild.yaml
 ```
 
-- Configure the [matchmaking-service](./backend_services/matchmaking-service) either by using environment variables or by copying the `matchmaking-service/config.yml.template` file to `matchmaking-service/config.yml`, and modify the Spanner connection details:
+> **NOTE:** If the `cloudbuild.yaml` file doesn't exist in this directory, make sure to run the Terraform setup step again.
+
+For more information on running the workloads, follow [these instructions](./workloads.md).
+
+> **NOTE:** It will take some time time to complete the build.
+
+### Kubectl
+To interact with the GKE cluster, ensure kubectl is installed.
+
+Once that is done, authenticate to GKE with the following commands:
 
 ```
-# environment variables
-export SPANNER_PROJECT_ID=YOUR_PROJECT_ID
-export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
-export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
+export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+export GKE_CLUSTER=sample-game-gke # change this based on the terraform configuration
+gcloud container clusters get-credentials $GKE_CLUSTER --region us-central1
+kubectl get namespaces
 ```
 
-```
-# config.yml spanner connection details
-spanner:
-  project_id: YOUR_PROJECT_ID
-  instance_id: YOUR_INSTANCE_ID
-  database_id: YOUR_DATABASE_ID
-
-```
-
-- Run the match-making service. By default, this will run the service on localhost:8081.
-
-```
-cd ./backend_services/matchmaking-service
-go run .
-```
-
-#### Local player trading deployment
-
-> **NOTE:** Skip this section if you deployed the services using [GKE](./docs/GKE.md)
-
-- Configure [`item-service`](./backend_services/item-service) either by using environment variables or by copying the `item-service/config.yml.template` file to `item-service/config.yml`, and modify the Spanner connection details:
-
-```
-# environment variables
-export SPANNER_PROJECT_ID=YOUR_PROJECT_ID
-export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
-export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
-```
-
-```
-# config.yml spanner connection details
-spanner:
-  project_id: YOUR_PROJECT_ID
-  instance_id: YOUR_INSTANCE_ID
-  database_id: YOUR_DATABASE_ID
-
-```
-
-- Run the item service. By default, this will run the service on localhost:8082.
-
-```
-cd ./backend_services/item-service
-go run .
-```
-
-- Configure the [tradepost-service](./backend_services/tradepost-service) either by using environment variables or by copying the `tradepost-service/config.yml.template` file to `tradepost-service/config.yml`, and modify the Spanner connection details:
-
-```
-# environment variables
-export SPANNER_PROJECT_ID=YOUR_PROJECT_ID
-export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
-export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
-```
-
-```
-# config.yml spanner connection details
-spanner:
-  project_id: YOUR_PROJECT_ID
-  instance_id: YOUR_INSTANCE_ID
-  database_id: YOUR_DATABASE_ID
-
-```
-
-- Run the tradepost service. By default, this will run the service on localhost:8083.
-
-```
-cd ./backend_services/tradepost-service
-go run .
-```
-
-## How to build the services locally
-
-A Makefile is provided to build the services. Example commands:
-
-```
-# Build everything
-make build-all
-
-# Build individual services
-make profile
-make matchmaking
-make item
-make tradepost
-```
-
-> **NOTE:** The build command currently assumes GOOS=linux and GOARCH=386. Building on other platforms currently is not supported.
-
-## How to run the service tests
-A Makefile is provided to test the services. Both unit tests and integration tests are provided.
-
-Example commands:
-
-```
-make profile-test
-make profile-test-integration
-
-make test-all-unit
-make test-all-integration
-
-make test-all
-```
-
-> **NOTE:** The tests rely on [testcontainers-go](https://github.com/testcontainers/testcontainers-go), so [Docker](https://www.docker.com/) must be installed.
+If there are no issues with the kubectl commands, kubectl is properly authenticated.
 
 ## Cleaning up
 
@@ -286,7 +190,7 @@ terraform destroy
 ```
 
 ### Clean up builds and tests
-The Makefile provides a `make clean` command that removes the binaries and docker containers that were created as part of building and testing the services.
+The Makefile provides a `make clean` command that removes the binaries and docker containers that were created as part of building and testing the services as described in the [local setup](./docs/local.md).
 
 ```
 make clean

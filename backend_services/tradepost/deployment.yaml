@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,35 +15,43 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: game-workload
+  name: tradepost
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
-    app: cymbal-games-game-workload
+    app: tradepost
   ports:
-  - port: 8089
-    targetPort: 8089
+  - port: 80
+    targetPort: 80
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cymbal-games-game-workload
+  name: tradepost
 spec:
   replicas: 1 # EDIT: Number of instances of deployment
   selector:
     matchLabels:
-      app: cymbal-games-game-workload
+      app: tradepost
   template:
     metadata:
       labels:
-        app: cymbal-games-game-workload
+        app: tradepost
     spec:
       serviceAccountName: k8s-service-account
       containers:
-      - name: game-workload
-        image: gcr.io/GCP_PROJECT_ID/game-generator:latest # EDIT: Your GCP Project ID
+      - name: tradepost-service
+        image: tradepost
         ports:
-          - containerPort: 8089
+          - containerPort: 80
+        envFrom:
+          - configMapRef:
+              name: spanner-config
+        env:
+          - name: SERVICE_HOST
+            value: "0.0.0.0"
+          - name: SERVICE_PORT
+            value: "80"
         resources:
           requests:
             cpu: "500m"

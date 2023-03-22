@@ -227,13 +227,13 @@ func (o *TradeOrder) Buy(ctx context.Context, client spanner.Client) error {
 		}
 
 		// Update seller's account balance
-		if err := lister.UpdateBalance(ctx, txn, o.ListPrice); err != nil {
+		if err := lister.UpdateBalance(txn, o.ListPrice); err != nil {
 			return err
 		}
 
 		// Update buyer's account balance
 		negAmount := o.ListPrice.Neg(&o.ListPrice)
-		if err := buyer.UpdateBalance(ctx, txn, *negAmount); err != nil {
+		if err := buyer.UpdateBalance(txn, *negAmount); err != nil {
 			return err
 		}
 
@@ -245,7 +245,7 @@ func (o *TradeOrder) Buy(ctx context.Context, client spanner.Client) error {
 		pi.GameSession = buyer.CurrentGame
 
 		// Moves the item from lister (current pi.PlayerUUID) to buyer
-		if err := pi.MoveItem(ctx, txn, o.Buyer); err != nil {
+		if err := pi.MoveItem(txn, o.Buyer); err != nil {
 			return err
 		}
 

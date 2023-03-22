@@ -88,7 +88,7 @@ func GetPlayerItem(ctx context.Context, txn *spanner.ReadWriteTransaction, playe
 }
 
 // MoveItem moves an item to a new player, and removes the item entry from the old player
-func (pi *PlayerItem) MoveItem(ctx context.Context, txn *spanner.ReadWriteTransaction, toPlayer string) error {
+func (pi *PlayerItem) MoveItem(txn *spanner.ReadWriteTransaction, toPlayer string) error {
 	err := txn.BufferWrite([]*spanner.Mutation{
 		spanner.Insert("player_items", []string{"playerItemUUID", "playerUUID", "itemUUID", "price", "source", "game_session"},
 			[]interface{}{pi.PlayerItemUUID, toPlayer, pi.ItemUUID, pi.Price, pi.Source, pi.GameSession}),

@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,55 +15,35 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: matchmaking
+  name: matchmaking-workload
 spec:
   type: LoadBalancer
   selector:
-    app: cymbal-games-matchmaking
+    app: matchmaking-workload
   ports:
-  - port: 80
-    targetPort: 80
+  - port: 8089
+    targetPort: 8089
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cymbal-games-matchmaking
+  name: matchmaking-workload
 spec:
   replicas: 1 # EDIT: Number of instances of deployment
   selector:
     matchLabels:
-      app: cymbal-games-matchmaking
+      app: matchmaking-workload
   template:
     metadata:
       labels:
-        app: cymbal-games-matchmaking
+        app: matchmaking-workload
     spec:
       serviceAccountName: k8s-service-account
       containers:
-      - name: matchmaking-service
-        image: gcr.io/GCP_PROJECT_ID/matchmaking-service:latest # EDIT: Your GCP Project ID
+      - name: matchmaking-workload
+        image: matchmaking-workload
         ports:
-          - containerPort: 80
-        env:
-          - name: SPANNER_PROJECT_ID
-            valueFrom:
-              configMapKeyRef:
-                name: spanner-config
-                key: spanner_project_id
-          - name: SPANNER_INSTANCE_ID
-            valueFrom:
-              configMapKeyRef:
-                name: spanner-config
-                key: spanner_instance_id
-          - name: SPANNER_DATABASE_ID
-            valueFrom:
-              configMapKeyRef:
-                name: spanner-config
-                key: spanner_database_id
-          - name: SERVICE_HOST
-            value: "0.0.0.0"
-          - name: SERVICE_PORT
-            value: "80"
+          - containerPort: 8089
         resources:
           requests:
             cpu: "500m"

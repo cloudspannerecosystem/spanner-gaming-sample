@@ -11,7 +11,7 @@ Various charts are provided by the web interface to indicate the performance of 
 If you do not want to use the web interface, the command line options specify the user concurrency, as well as a run time. Statistics are printed on the
 command line for the test.
 
-> **NOTE:** If deploying the workloads [on GKE](../docs/GKE.md), only the web interface is supported.
+> **NOTE:** If deploying the workloads on GKE, only the web interface is supported.
 
 More information on these workloads can be found [in the docs](../docs/workloads.md)
 

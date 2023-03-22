@@ -16,19 +16,18 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "4.44.1"
+      version = "4.56.0"
     }
   }
 
-  required_version = ">= 0.14"
+  required_version = ">= 1.3"
 }
 
 provider "google" {
   project = var.gcp_project
 }
 
-data "google_project" "project" {
-}
+data "google_project" "project" {}
 
 resource "google_project_service" "project" {
   for_each = toset(var.gcp_project_services)
@@ -38,18 +37,3 @@ resource "google_project_service" "project" {
 }
 
 data "google_client_config" "provider" {}
-
-data "google_container_cluster" "gke-provider" {
-  name     = var.gke_config.cluster_name
-  location = var.gke_config.location
-
-  depends_on = [ google_container_cluster.sample-game-gke ]
-}
-
-provider "kubernetes" {
-  host  = "https://${data.google_container_cluster.gke-provider.endpoint}"
-  token = data.google_client_config.provider.access_token
-  cluster_ca_certificate = base64decode(
-    data.google_container_cluster.gke-provider.master_auth[0].cluster_ca_certificate,
-  )
-}

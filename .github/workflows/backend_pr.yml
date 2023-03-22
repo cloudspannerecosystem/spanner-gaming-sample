@@ -19,7 +19,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          working-directory: ./backend_services/${{matrix.service}}-service
+          working-directory: ./backend_services/${{matrix.service}}
           args: --timeout 120s --verbose
   test:
     name: Tests

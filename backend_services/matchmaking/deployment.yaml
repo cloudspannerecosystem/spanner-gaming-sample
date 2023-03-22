@@ -15,11 +15,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: profile
+  name: matchmaking
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
-    app: cymbal-games-profile
+    app: matchmaking
   ports:
   - port: 80
     targetPort: 80
@@ -27,49 +27,37 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cymbal-games-profile
+  name: matchmaking
 spec:
-  replicas: 2 # EDIT: Number of instances of deployment
+  replicas: 1 # EDIT: Number of instances of deployment
   selector:
     matchLabels:
-      app: cymbal-games-profile
+      app: matchmaking
   template:
     metadata:
       labels:
-        app: cymbal-games-profile
+        app: matchmaking
     spec:
       serviceAccountName: k8s-service-account
       containers:
-      - name: profile-service
-        image: gcr.io/GCP_PROJECT_ID/profile-service:latest # EDIT: Your GCP Project ID
+      - name: matchmaking-service
+        image: matchmaking
         ports:
           - containerPort: 80
+        envFrom:
+          - configMapRef:
+              name: spanner-config
         env:
-          - name: SPANNER_PROJECT_ID
-            valueFrom:
-              configMapKeyRef:
-                name: spanner-config
-                key: spanner_project_id
-          - name: SPANNER_INSTANCE_ID
-            valueFrom:
-              configMapKeyRef:
-                name: spanner-config
-                key: spanner_instance_id
-          - name: SPANNER_DATABASE_ID
-            valueFrom:
-              configMapKeyRef:
-                name: spanner-config
-                key: spanner_database_id
           - name: SERVICE_HOST
             value: "0.0.0.0"
           - name: SERVICE_PORT
             value: "80"
         resources:
           requests:
-            cpu: "1"
-            memory: "1Gi"
+            cpu: "500m"
+            memory: "512Mi"
             ephemeral-storage: "100Mi"
           limits:
-            cpu: "1"
-            memory: "1Gi"
+            cpu: "500m"
+            memory: "512Mi"
             ephemeral-storage: "100Mi"
