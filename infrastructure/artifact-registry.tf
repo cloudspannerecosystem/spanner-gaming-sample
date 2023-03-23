@@ -46,9 +46,9 @@ resource "local_file" "workloads-build" {
       artifact_registry_id = var.artifact_registry_config.id
       artifact_registry_location = var.artifact_registry_config.location
       skaffold_version = var.skaffold_version
-      delivery_pipeline = google_clouddeploy_delivery_pipeline.services_pipeline.name
+      delivery_pipeline = google_clouddeploy_delivery_pipeline.workloads_pipeline.name
   })
   filename = "${path.module}/${var.workload_directory}/cloudbuild.yaml"
 
-  depends_on = [ google_clouddeploy_delivery_pipeline.services_pipeline ]
+  depends_on = [ google_clouddeploy_delivery_pipeline.workloads_pipeline ]
 }

@@ -25,19 +25,9 @@ spanner_config = {
     deletion_protection = true
 }
 
-backend_sa_config = {
-    name     = "sample-game-backend"
-    description     = "Sample Game backend service account"
-}
-
-k8s_service_account_id    = "k8s-service-account"
-
 gke_config = {
     cluster_name      = "sample-game-gke"
     location          = "us-central1"
-    resource_labels   = {
-        environment = "staging"
-    }
 }
 
 # Artifact Registry variables
@@ -47,7 +37,12 @@ artifact_registry_config = {
 }
 
 # Cloud Deploy Configuration
-clouddeploy_config = {
+services_clouddeploy_config = {
     pipeline_name = "sample-game-services"
-    location = "us-central1"
+    pipeline_description = "Backend services pipeline"
+}
+
+workloads_clouddeploy_config = {
+    pipeline_name = "sample-game-workloads"
+    pipeline_description = "Workloads pipeline"
 }

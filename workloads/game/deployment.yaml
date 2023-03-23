@@ -38,7 +38,7 @@ spec:
       labels:
         app: game-workload
     spec:
-      serviceAccountName: k8s-service-account
+      serviceAccountName: default
       containers:
       - name: game-workload
         image: game-workload

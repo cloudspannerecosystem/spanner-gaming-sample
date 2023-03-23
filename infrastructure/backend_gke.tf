@@ -21,6 +21,10 @@ resource "google_container_cluster" "sample-game-gke" {
   # Enabling Autopilot for this cluster
   enable_autopilot  = true
 
+  resource_labels = {
+    "environment" = var.resource_env_label
+  }
+
   # See issue: https://github.com/hashicorp/terraform-provider-google/issues/10782
   ip_allocation_policy {}
 }

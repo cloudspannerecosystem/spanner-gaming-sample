@@ -38,7 +38,7 @@ spec:
       labels:
         app: item
     spec:
-      serviceAccountName: k8s-service-account
+      serviceAccountName: item-app
       containers:
       - name: item-service
         image: item

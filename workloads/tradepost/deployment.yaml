@@ -38,7 +38,7 @@ spec:
       labels:
         app: tradepost-workload
     spec:
-      serviceAccountName: k8s-service-account
+      serviceAccountName: default
       containers:
       - name: tradepost-workload
         image: tradepost-workload

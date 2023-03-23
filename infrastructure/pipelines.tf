@@ -22,7 +22,6 @@ resource "google_clouddeploy_target" "services_deploy_target" {
     cluster = data.google_container_cluster.gke-provider.id
   }
 
-  project          = var.gcp_project
   require_approval = false
 
   labels = {
@@ -34,11 +33,9 @@ resource "google_clouddeploy_target" "services_deploy_target" {
 
 resource "google_clouddeploy_delivery_pipeline" "services_pipeline" {
   location = var.gke_config.location
-  name     = var.clouddeploy_config.pipeline_name
+  name     = var.services_clouddeploy_config.pipeline_name
 
-  description = "Backend Services Pipeline"
-
-  project = var.gcp_project
+  description = var.services_clouddeploy_config.pipeline_description
 
   labels = {
     "environment" = var.resource_env_label
@@ -50,6 +47,43 @@ resource "google_clouddeploy_delivery_pipeline" "services_pipeline" {
     }
   }
 
-  depends_on = [google_project_service.project, google_clouddeploy_target.services_deploy_target]
+  depends_on = [google_clouddeploy_target.services_deploy_target]
 }
 
+# Workloads deploy to same GKE cluster, but separate pipeline
+resource "google_clouddeploy_target" "workloads_deploy_target" {
+  location    = var.gke_config.location
+  name        = "workloads-target"
+  description = "Workloads Deploy Target"
+
+  gke {
+    cluster = data.google_container_cluster.gke-provider.id
+  }
+
+  require_approval = false
+
+  labels = {
+    "environment" = var.resource_env_label
+  }
+
+  depends_on = [google_project_service.project, google_container_cluster.sample-game-gke]
+}
+
+resource "google_clouddeploy_delivery_pipeline" "workloads_pipeline" {
+  location = var.gke_config.location
+  name     = var.workloads_clouddeploy_config.pipeline_name
+
+  description = var.workloads_clouddeploy_config.pipeline_description
+
+  labels = {
+    "environment" = var.resource_env_label
+  }
+
+  serial_pipeline {
+    stages {
+      target_id = google_clouddeploy_target.workloads_deploy_target.target_id
+    }
+  }
+
+  depends_on = [google_clouddeploy_target.workloads_deploy_target]
+}

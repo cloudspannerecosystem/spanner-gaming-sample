@@ -68,7 +68,7 @@ func teardown(ctx context.Context, emulator *Emulator, service *Service) {
 
 func setupSpannerEmulator(ctx context.Context) (*Emulator, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "gcr.io/cloud-spanner-emulator/emulator:latest",
+		Image:        "gcr.io/cloud-spanner-emulator/emulator:1.5.0",
 		ExposedPorts: []string{"9010/tcp"},
 		Networks: []string{
 			TESTNETWORK,

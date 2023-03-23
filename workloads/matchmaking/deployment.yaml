@@ -38,7 +38,7 @@ spec:
       labels:
         app: matchmaking-workload
     spec:
-      serviceAccountName: k8s-service-account
+      serviceAccountName: default
       containers:
       - name: matchmaking-workload
         image: matchmaking-workload
