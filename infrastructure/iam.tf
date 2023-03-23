@@ -17,9 +17,7 @@ resource "google_project_iam_member" "clouddeploy-iam" {
   project = var.gcp_project
   for_each = toset([
     "roles/container.admin",
-    "roles/storage.admin",
-    "roles/logging.logWriter",
-    "roles/clouddeploy.jobRunner"
+    "roles/storage.admin"
   ])
   role   = each.key
   member = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
@@ -90,6 +88,7 @@ resource "google_project_iam_member" "cloudbuild-sa-cloudbuild-roles" {
     "roles/container.admin",
     "roles/storage.admin",
     "roles/iam.serviceAccountUser",
+    "roles/spanner.viewer",
     "roles/spanner.databaseUser",
     "roles/gkehub.editor",
     "roles/logging.logWriter",

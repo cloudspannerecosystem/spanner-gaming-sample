@@ -28,7 +28,6 @@ resource "google_artifact_registry_repository" "container_registry" {
 resource "local_file" "backend-service-build" {
   content = templatefile(
     "${path.module}/files/backend_services/cloudbuild.yaml.tpl", {
-      project_id  = var.gcp_project
       artifact_registry_id = var.artifact_registry_config.id
       artifact_registry_location = var.artifact_registry_config.location
       skaffold_version = var.skaffold_version
@@ -42,7 +41,6 @@ resource "local_file" "backend-service-build" {
 resource "local_file" "workloads-build" {
   content = templatefile(
     "${path.module}/files/workloads/cloudbuild.yaml.tpl", {
-      project_id  = var.gcp_project
       artifact_registry_id = var.artifact_registry_config.id
       artifact_registry_location = var.artifact_registry_config.location
       skaffold_version = var.skaffold_version
