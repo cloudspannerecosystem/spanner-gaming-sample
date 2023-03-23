@@ -29,44 +29,48 @@ resource "google_project_iam_member" "clouddeploy-iam" {
 
 # GKE Autopilot IAM
 resource "google_service_account" "backend_sa" {
-  account_id   = var.backend_sa_config.name
-  display_name = var.backend_sa_config.description
+  for_each = toset(var.backend_service_accounts)
+  account_id   = each.value
+  display_name = "Service account for the '${each.value}' backend service"
   project    = var.gcp_project
 }
 
-resource "kubernetes_service_account" "k8s-service-account" {
-  metadata {
-    name      = var.k8s_service_account_id
-    namespace = "default"
-    annotations = {
-      "iam.gke.io/gcp-service-account" : "${google_service_account.backend_sa.email}"
-    }
-  }
-}
-
-data "google_iam_policy" "spanner-policy" {
-  binding {
-    role = "roles/iam.workloadIdentityUser"
-    members = [
-      "serviceAccount:${var.gcp_project}.svc.id.goog[default/${kubernetes_service_account.k8s-service-account.metadata[0].name}]"
-    ]
-  }
-}
-
-resource "google_service_account_iam_policy" "backend-service-account-iam" {
-  service_account_id = google_service_account.backend_sa.name
-  policy_data        = data.google_iam_policy.spanner-policy.policy_data
-}
-
-# Create IAM service account for locked down cloud run container to access Spanner service
+# Adds each backend service to the roles/databaseUser binding for the spanner instance/database
 resource "google_spanner_database_iam_binding" "backend_iam_spanner" {
   instance = google_spanner_instance.instance.name
   database = google_spanner_database.database.name
   role     = "roles/spanner.databaseUser"
 
+  members = formatlist("serviceAccount:%s", values(google_service_account.backend_sa)[*].email)
+}
+
+# Allow each backend service to be impersonated by workload identity
+resource "google_service_account_iam_binding" "spanner-workload-identity-binding" {
+  for_each            = google_service_account.backend_sa
+  service_account_id  = each.value.name
+  role                = "roles/iam.workloadIdentityUser"
+
   members = [
-    "serviceAccount:${google_service_account.backend_sa.email}",
+     "serviceAccount:${var.gcp_project}.svc.id.goog[default/${each.key}]",
   ]
+
+  depends_on = [google_project_service.project, google_service_account.backend_sa]
+}
+
+# Create a kubernetes service account for each backend service. Workloads use default service account
+resource "kubernetes_service_account" "k8s-service-account" {
+  for_each  = google_service_account.backend_sa
+
+  metadata{
+    name      = each.key
+    namespace = "default"
+
+    annotations = {
+      "iam.gke.io/gcp-service-account" : each.value.email
+    }
+  }
+
+  depends_on = [google_container_cluster.sample-game-gke]
 }
 
 ##### Cloud Deploy IAM #####
@@ -87,7 +91,9 @@ resource "google_project_iam_member" "cloudbuild-sa-cloudbuild-roles" {
     "roles/storage.admin",
     "roles/iam.serviceAccountUser",
     "roles/spanner.databaseUser",
-    "roles/gkehub.editor"
+    "roles/gkehub.editor",
+    "roles/logging.logWriter",
+    "roles/clouddeploy.jobRunner"
   ])
   role   = each.key
   member = "serviceAccount:${google_service_account.cloudbuild-sa.email}"

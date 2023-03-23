@@ -38,7 +38,7 @@ spec:
       labels:
         app: tradepost
     spec:
-      serviceAccountName: k8s-service-account
+      serviceAccountName: tradepost-app
       containers:
       - name: tradepost-service
         image: tradepost

@@ -38,7 +38,7 @@ spec:
       labels:
         app: matchmaking
     spec:
-      serviceAccountName: k8s-service-account
+      serviceAccountName: matchmaking-app
       containers:
       - name: matchmaking-service
         image: matchmaking

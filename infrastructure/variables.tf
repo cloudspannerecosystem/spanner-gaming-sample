@@ -60,22 +60,20 @@ variable "gke_config" {
   type = object({
     cluster_name = string
     location = string
-    resource_labels = map(string)
   })
 
   description = "The configuration specifications for a GKE Autopilot cluster"
 }
 
-variable backend_sa_config {
-  type = object({
-    name            = string
-    description     = string
-  })
-  description = "The configuration specifications for the backend service account"
-}
-
-variable "k8s_service_account_id" {
-  description = "The kubernetes service account that will impersonate the IAM service account to access Cloud Spanner. This account will be created."
+variable "backend_service_accounts" {
+  type        = list(any)
+  description = "List of backend service accounts that have Spanner access"
+  default     = [
+    "profile-app",
+    "matchmaking-app",
+    "item-app",
+    "tradepost-app"
+  ]
 }
 
 ### Artifact Registry Variables ###
@@ -89,10 +87,17 @@ variable "artifact_registry_config" {
 
 ### Cloud Deploy Variables ###
 
-variable "clouddeploy_config" {
+variable "services_clouddeploy_config" {
   type = object({
-    pipeline_name = string
-    location      = string
+    pipeline_name         = string
+    pipeline_description  = string
+  })
+}
+
+variable "workloads_clouddeploy_config" {
+  type = object({
+    pipeline_name         = string
+    pipeline_description  = string
   })
 }
 

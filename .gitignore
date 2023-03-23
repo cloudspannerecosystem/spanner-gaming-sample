@@ -15,3 +15,7 @@
 .vscode/***
 bin/*
 *.tar.gz
+
+# Backend services generated files from terraform
+backend_services/cloudbuild.yaml
+backend_services/spanner_config.yaml

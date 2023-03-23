@@ -38,7 +38,7 @@ spec:
       labels:
         app: profile-workload
     spec:
-      serviceAccountName: k8s-service-account
+      serviceAccountName: default
       containers:
       - name: profile-workload
         image: profile-workload
