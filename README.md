@@ -55,13 +55,19 @@ This demo is meant to show you a working application with load against a Cloud S
 
 ### Setup infrastructure
 
+First you will want to set a variable to make it easier to navigate this directory.
+
+```bash
+export DEMO_HOME=$(pwd)
+```
+
 Before you set up the infrastructure, it is important to enable the appropriate APIs using the gcloud command line.
 
 You must [install and configure gcloud](https://cloud.google.com/sdk/docs/install-sdk).
 
 When that's complete, ensure your gcloud project is set correctly.
 
-```
+```bash
 gcloud config set project <PROJECT_ID>
 ```
 
@@ -73,7 +79,7 @@ Then you can set up the Spanner infrastructure using either the gcloud command l
 
 To create the Spanner instance and database using gcloud, issue the following commands:
 
-```
+```bash
 gcloud spanner instances create sample-instance --config=regional-us-central1 --description=gaming-instance --processing-units=500
 
 gcloud spanner databases create --instance sample-instance sample-game
@@ -96,8 +102,8 @@ To set up the infrastructure, do the following:
 - Modify `infrastructure/terraform.tfvars` for PROJECT and instance configuration
 - `terraform apply` from within infrastructure directory
 
-```
-cd infrastructure
+```bash
+cd $DEMO_HOME/infrastructure
 terraform init
 cp terraform.tfvars.sample terraform.tfvars
 vi terraform.tfvars # modify variables
@@ -111,15 +117,34 @@ terraform apply
 ### Schema management
 Schema is managed by [Wrench](https://github.com/cloudspannerecosystem/wrench).
 
+There are two methods to deploy the schema: Cloud Build and local.
+
+> **NOTE:** The schema must be in place for the services to work. Do not skip this step!
+
+#### Cloud Build schema management
+
+To use cloud build schema management, run the cloud build commands:
+
+```bash
+cd $DEMO_HOME/schema
+gcloud builds submit --config=cloudbuild.yaml
+```
+
+> **NOTE:** You must have used the Terraform setup to ensure the cloud build IAM permissions are correct.
+
+#### Local schema management
+Local schema management simply means you run the migrations from your local machine. The schema changes still get applied to the remote Cloud Spanner instance.
+
+First, install wrench.
+
 After installing wrench, migrate the schema by running the `./scripts/schema.sh` file (replace project/instance/database information with what was used in terraform file):
 
-```
+```bash
 export SPANNER_PROJECT_ID=YOUR_PROJECT_ID
 export SPANNER_INSTANCE_ID=YOUR_INSTANCE_ID
 export SPANNER_DATABASE_ID=YOUR_DATABASE_ID
 ./scripts/schema.sh
 ```
-> **NOTE:** The schema must be in place for the services to work. Do not skip this step!
 
 ### Deployment
 You can deploy the services and workloads to the GKE cluster that was configured by Terraform, or you can deploy them locally.
@@ -133,7 +158,7 @@ To deploy locally, follow the [instructions here](./docs/local.md).
 To deploy the services to GKE, use `gcloud build` from the `backend_services` directory:
 
 ```bash
-cd backend_services
+cd $DEMO_HOME/backend_services
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
@@ -146,7 +171,7 @@ Once the services are deployed you can deploy the workloads to GKE.
 To deploy the workloads to GKE, use `gcloud build` from the `workloads` directory:
 
 ```bash
-cd workloads
+cd $DEMO_HOME/workloads
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
@@ -161,7 +186,7 @@ To interact with the GKE cluster, ensure kubectl is installed.
 
 Once that is done, authenticate to GKE with the following commands:
 
-```
+```bash
 export USE_GKE_GCLOUD_AUTH_PLUGIN=True
 export GKE_CLUSTER=sample-game-gke # change this based on the terraform configuration
 gcloud container clusters get-credentials $GKE_CLUSTER --region us-central1
@@ -176,7 +201,7 @@ If there are no issues with the kubectl commands, kubectl is properly authentica
 
 If the Spanner instance was created using the gcloud command line, it can be delete using gcloud:
 
-```
+```bash
 gcloud spanner instances delete sample-instance
 ```
 
@@ -184,14 +209,14 @@ gcloud spanner instances delete sample-instance
 
 If the infrastructure was created using terraform, then from the `infrastructure` directory you can destroy the infrastructure.
 
-```
-cd infrastructure
+```bash
+cd $DEMO_HOME/infrastructure
 terraform destroy
 ```
 
 ### Clean up builds and tests
 The Makefile provides a `make clean` command that removes the binaries and docker containers that were created as part of building and testing the services as described in the [local setup](./docs/local.md).
 
-```
+```bash
 make clean
 ```
