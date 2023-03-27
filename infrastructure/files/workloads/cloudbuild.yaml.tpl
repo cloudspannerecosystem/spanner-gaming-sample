@@ -38,6 +38,11 @@ steps:
     args: ["build", ".", "-t", "$${_TRADEPOST_IMAGE}"]
     dir: tradepost
     waitFor: ['-']
+  - name: gcr.io/cloud-builders/docker
+    id: item-generator
+    args: ["build", ".", "-t", "$${_ITEMGEN_IMAGE}"]
+    dir: item_generator
+    waitFor: ['-']
 
 
 #
@@ -52,7 +57,7 @@ steps:
         "--delivery-pipeline", "${delivery_pipeline}",
         "--skaffold-file", "skaffold.yaml",
         "--skaffold-version", "${skaffold_version}",
-        "--images", "profile-workload=$${_PROFILE_IMAGE},matchmaking-workload=$${_MATCHMAKING_IMAGE},game-workload=$${_GAME_IMAGE},tradepost-workload=$${_TRADEPOST_IMAGE}",
+        "--images", "profile-workload=$${_PROFILE_IMAGE},matchmaking-workload=$${_MATCHMAKING_IMAGE},game-workload=$${_GAME_IMAGE},tradepost-workload=$${_TRADEPOST_IMAGE},item-generator=$${_ITEMGEN_IMAGE}",
         "--region", "us-central1"
       ]
 
@@ -62,12 +67,14 @@ artifacts:
     - $${_REGISTRY}/matchmaking-workload
     - $${_REGISTRY}/game-workload
     - $${_REGISTRY}/tradepost-workload
+    - $${_REGISTRY}/item-generator
 
 substitutions:
   _PROFILE_IMAGE: $${_REGISTRY}/profile-workload:$${BUILD_ID}
   _MATCHMAKING_IMAGE: $${_REGISTRY}/matchmaking-workload:$${BUILD_ID}
   _GAME_IMAGE: $${_REGISTRY}/game-workload:$${BUILD_ID}
   _TRADEPOST_IMAGE: $${_REGISTRY}/tradepost-workload:$${BUILD_ID}
+  _ITEMGEN_IMAGE: $${_REGISTRY}/item-generator:$${BUILD_ID}
   _REGISTRY: ${artifact_registry_location}-docker.pkg.dev/$${PROJECT_ID}/${artifact_registry_id}
   _REL_NAME: rel-$${BUILD_ID:0:8}
 options:

@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC All Rights Reserved.
+# Copyright 2023 Google Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: skaffold/v2beta29
-kind: Config
-deploy:
-  kubectl:
-    manifests:
-      - profile/deployment.yaml
-      - matchmaking/deployment.yaml
-      - game/deployment.yaml
-      - tradepost/deployment.yaml
-      - item_generator/deployment.yaml
+FROM locustio/locust
+
+# Deploy code
+COPY --chown=locust:locust item_generator.py /home/locust/locustfile.py
