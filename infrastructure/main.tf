@@ -27,13 +27,15 @@ provider "google" {
   project = var.gcp_project
 }
 
-data "google_project" "project" {}
-
-resource "google_project_service" "project" {
+resource "google_project_service" "service_api" {
   for_each = toset(var.gcp_project_services)
   service  = each.value
 
   disable_on_destroy = false
+}
+
+data "google_project" "project" {
+  depends_on = [google_project_service.service_api]
 }
 
 data "google_client_config" "provider" {}

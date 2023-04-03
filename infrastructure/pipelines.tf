@@ -28,7 +28,7 @@ resource "google_clouddeploy_target" "services_deploy_target" {
     "environment" = var.resource_env_label
   }
 
-  depends_on = [google_project_service.project, google_container_cluster.sample-game-gke]
+  depends_on = [google_project_service.service_api, google_container_cluster.sample-game-gke]
 }
 
 resource "google_clouddeploy_delivery_pipeline" "services_pipeline" {
@@ -66,7 +66,7 @@ resource "google_clouddeploy_target" "workloads_deploy_target" {
     "environment" = var.resource_env_label
   }
 
-  depends_on = [google_project_service.project, google_container_cluster.sample-game-gke]
+  depends_on = [google_project_service.service_api, google_container_cluster.sample-game-gke]
 }
 
 resource "google_clouddeploy_delivery_pipeline" "workloads_pipeline" {

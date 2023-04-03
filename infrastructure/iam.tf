@@ -22,7 +22,7 @@ resource "google_project_iam_member" "clouddeploy-iam" {
   role   = each.key
   member = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
 
-  depends_on = [google_project_service.project]
+  depends_on = [google_project_service.service_api]
 }
 
 # GKE Autopilot IAM
@@ -52,7 +52,7 @@ resource "google_service_account_iam_binding" "spanner-workload-identity-binding
      "serviceAccount:${var.gcp_project}.svc.id.goog[default/${each.key}]",
   ]
 
-  depends_on = [google_project_service.project, google_service_account.backend_sa]
+  depends_on = [google_project_service.service_api, google_service_account.backend_sa, google_container_cluster.sample-game-gke]
 }
 
 # Create a kubernetes service account for each backend service. Workloads use default service account
