@@ -12,20 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-# Basic compute permissions
-resource "google_project_iam_member" "clouddeploy-iam" {
-  project = var.gcp_project
-  for_each = toset([
-    "roles/container.admin",
-    "roles/storage.admin"
-  ])
-  role   = each.key
-  member = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
-
-  depends_on = [google_project_service.service_api]
+# GKE Autopilot Workload IAM accounts
+resource "google_service_account" "gke-sa" {
+  account_id    = "gke-cluster-account"
+  display_name  = "Service account to manage GKE Autopilot cluster"
+  project       = var.gcp_project
 }
 
-# GKE Autopilot IAM
+resource "google_project_iam_binding" "gke-identity-binding" {
+  project       = var.gcp_project
+  role                = "roles/container.nodeServiceAccount"
+
+  members = [
+     "serviceAccount:${google_service_account.gke-sa.email}",
+  ]
+
+  depends_on = [google_project_service.service_api, google_service_account.gke-sa]
+}
+
+# Allow GKE service account to read from artifact registery
+resource "google_artifact_registry_repository_iam_member" "member" {
+  project = google_artifact_registry_repository.container_registry.project
+  location = google_artifact_registry_repository.container_registry.location
+  repository = google_artifact_registry_repository.container_registry.name
+  role = "roles/artifactregistry.reader"
+  member = "serviceAccount:${google_service_account.gke-sa.email}"
+
+  depends_on = [google_artifact_registry_repository.container_registry]
+}
+
+# GKE workload service accounts
 resource "google_service_account" "backend_sa" {
   for_each = toset(var.backend_service_accounts)
   account_id   = each.value
