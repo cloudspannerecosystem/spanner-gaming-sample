@@ -48,6 +48,7 @@ variable "gcp_project_services" {
   type        = list(any)
   description = "GCP Service APIs (<api>.googleapis.com) to enable for this project"
   default     = [
+    "compute.googleapis.com",
     "artifactregistry.googleapis.com",
     "clouddeploy.googleapis.com",
     "cloudbuild.googleapis.com",

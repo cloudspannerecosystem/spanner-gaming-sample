@@ -22,7 +22,7 @@ resource "google_artifact_registry_repository" "container_registry" {
     "environment" = var.resource_env_label
   }
 
-  depends_on = [google_project_service.project]
+  depends_on = [google_project_service.service_api]
 }
 
 resource "local_file" "backend-service-build" {

@@ -20,6 +20,8 @@ resource "google_spanner_instance" "instance" {
   labels           = {
     "env" = var.resource_env_label
   }
+
+  depends_on = [google_project_service.service_api]
 }
 
 resource "google_spanner_database" "database" {

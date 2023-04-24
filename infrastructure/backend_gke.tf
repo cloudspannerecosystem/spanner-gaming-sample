@@ -18,6 +18,13 @@ resource "google_container_cluster" "sample-game-gke" {
   network           = google_compute_network.vpc.name
   subnetwork        = google_compute_subnetwork.subnet.name
 
+  # Use locked down service account
+  cluster_autoscaling {
+    auto_provisioning_defaults {
+      service_account = google_service_account.gke-sa.email
+    }
+  }
+
   # Enabling Autopilot for this cluster
   enable_autopilot  = true
 
@@ -27,6 +34,8 @@ resource "google_container_cluster" "sample-game-gke" {
 
   # See issue: https://github.com/hashicorp/terraform-provider-google/issues/10782
   ip_allocation_policy {}
+
+  depends_on = [google_service_account.gke-sa]
 }
 
 data "google_container_cluster" "gke-provider" {
