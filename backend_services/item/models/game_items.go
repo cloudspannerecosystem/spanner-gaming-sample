@@ -68,7 +68,7 @@ func readRows(iter *spanner.RowIterator) ([]spanner.Row, error) {
 func GetItemUUIDs(ctx context.Context, client spanner.Client) ([]string, error) {
 	ro := client.ReadOnlyTransaction()
 	stmt := spanner.Statement{SQL: `SELECT itemUUID FROM game_items LIMIT 10000`}
-	iter := ro.Query(ctx, stmt)
+	iter := ro.QueryWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=item,action=GetGameItems"})
 	defer iter.Stop()
 
 	itemRows, err := readRows(iter)
@@ -94,7 +94,8 @@ func GetItemUUIDs(ctx context.Context, client spanner.Client) ([]string, error) 
 func GetItemPrice(ctx context.Context, txn *spanner.ReadWriteTransaction, itemUUID string) (big.Rat, error) {
 	var price big.Rat
 
-	row, err := txn.ReadRow(ctx, "game_items", spanner.Key{itemUUID}, []string{"item_value"})
+	row, err := txn.ReadRowWithOptions(ctx, "game_items", spanner.Key{itemUUID}, []string{"item_value"},
+		&spanner.ReadOptions{RequestTag: "app=item,action=GetGameItemPrice"})
 	if err != nil {
 		return price, err
 	}
@@ -118,7 +119,7 @@ func (i *GameItem) Create(ctx context.Context, client spanner.Client) error {
 	}
 
 	// insert into spanner
-	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+	_, err := client.ReadWriteTransactionWithOptions(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		stmt := spanner.Statement{
 			SQL: `INSERT game_items (itemUUID, item_name, item_value, available_time, duration) VALUES
 					(@itemUUID, @itemName, @itemValue, @availableTime, @duration)
@@ -132,9 +133,9 @@ func (i *GameItem) Create(ctx context.Context, client spanner.Client) error {
 			},
 		}
 
-		_, err := txn.Update(ctx, stmt)
+		_, err := txn.UpdateWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=item,action=AddGameItem"})
 		return err
-	})
+	}, spanner.TransactionOptions{TransactionTag: "app=item,action=add_game_item"})
 
 	if err != nil {
 		return err
@@ -146,8 +147,9 @@ func (i *GameItem) Create(ctx context.Context, client spanner.Client) error {
 
 // GetItemByUUID returns information about an item when provided a valid game_item UUID
 func GetItemByUUID(ctx context.Context, client spanner.Client, itemUUID string) (GameItem, error) {
-	row, err := client.Single().ReadRow(ctx, "game_items",
-		spanner.Key{itemUUID}, []string{"itemUUID", "item_name", "item_value", "available_time", "duration"})
+	row, err := client.Single().ReadRowWithOptions(ctx, "game_items",
+		spanner.Key{itemUUID}, []string{"itemUUID", "item_name", "item_value", "available_time", "duration"},
+		&spanner.ReadOptions{RequestTag: "app=item,action=GetGameItemByUuid"})
 	if err != nil {
 		return GameItem{}, err
 	}
