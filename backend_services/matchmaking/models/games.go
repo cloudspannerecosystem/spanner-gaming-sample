@@ -134,7 +134,7 @@ func GetOpenGame(ctx context.Context, client spanner.Client) (Game, error) {
 
 	stmt := spanner.Statement{SQL: query}
 
-	iter := client.Single().Query(ctx, stmt)
+	iter := client.Single().QueryWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=matchmaking,action=GetOpenGame"})
 	defer iter.Stop()
 	for {
 		row, err := iter.Next()
@@ -208,13 +208,13 @@ func (g *Game) CreateGame(ctx context.Context, client spanner.Client) error {
 	numPlayers := 10
 
 	// Create and assign
-	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+	_, err := client.ReadWriteTransactionWithOptions(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		var m []*spanner.Mutation
 
 		// get players
 		query := fmt.Sprintf("SELECT playerUUID FROM (SELECT playerUUID FROM players WHERE current_game IS NULL LIMIT 10000) TABLESAMPLE RESERVOIR (%d ROWS)", numPlayers)
 		stmt := spanner.Statement{SQL: query}
-		iter := txn.Query(ctx, stmt)
+		iter := txn.QueryWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=matchmaking,action=AssignPlayers"})
 
 		playerRows, err := readRows(iter)
 		if err != nil {
@@ -248,7 +248,7 @@ func (g *Game) CreateGame(ctx context.Context, client spanner.Client) error {
 		}
 
 		return nil
-	})
+	}, spanner.TransactionOptions{TransactionTag: "app=matchmaking,action=create_game"})
 
 	if err != nil {
 		return err
@@ -263,7 +263,7 @@ func (g *Game) CreateGame(ctx context.Context, client spanner.Client) error {
 // them to be chosen for a new game.
 func (g *Game) CloseGame(ctx context.Context, client spanner.Client) error {
 	// Close game
-	_, err := client.ReadWriteTransaction(ctx,
+	_, err := client.ReadWriteTransactionWithOptions(ctx,
 		func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 			// Validate game finished time is null
 			row, err := txn.ReadRow(ctx, "games", spanner.Key{g.GameUUID}, []string{"finished"})
@@ -313,7 +313,7 @@ func (g *Game) CloseGame(ctx context.Context, client spanner.Client) error {
 			}
 
 			return nil
-		})
+		}, spanner.TransactionOptions{TransactionTag: "app=matchmaking,action=close_game"})
 
 	if err != nil {
 		return err
