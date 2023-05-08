@@ -45,7 +45,7 @@ type PlayerLedger struct {
 func GetPlayerSession(ctx context.Context, txn *spanner.ReadWriteTransaction, playerUUID string) (string, error) {
 	var session string
 
-	row, err := txn.ReadRow(ctx, "players", spanner.Key{playerUUID}, []string{"current_game"})
+	row, err := txn.ReadRowWithOptions(ctx, "players", spanner.Key{playerUUID}, []string{"current_game"}, &spanner.ReadOptions{RequestTag: "app=item,action=GetPlayerGame"})
 	if err != nil {
 		return "", err
 	}
@@ -72,7 +72,7 @@ func GetPlayer(ctx context.Context, client spanner.Client) (Player, error) {
 	query := fmt.Sprintf("SELECT playerUUID, current_game FROM (SELECT playerUUID, current_game FROM players WHERE current_game IS NOT NULL LIMIT 10000) TABLESAMPLE RESERVOIR (%d ROWS)", 1)
 	stmt := spanner.Statement{SQL: query}
 
-	iter := client.Single().Query(ctx, stmt)
+	iter := client.Single().QueryWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=item,action=GetPlayer"})
 	defer iter.Stop()
 	for {
 		row, err := iter.Next()
@@ -94,7 +94,7 @@ func GetPlayer(ctx context.Context, client spanner.Client) (Player, error) {
 // TODO: fix code to update a player's balance, not a ledger balance
 func (p *Player) UpdateBalance(ctx context.Context, client spanner.Client, l PlayerLedger) error {
 	// Update balance with new amount
-	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+	_, err := client.ReadWriteTransactionWithOptions(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		p.PlayerUUID = l.PlayerUUID
 		stmt := spanner.Statement{
 			SQL: `UPDATE players SET account_balance = (account_balance + @amount) WHERE playerUUID = @playerUUID`,
@@ -103,7 +103,7 @@ func (p *Player) UpdateBalance(ctx context.Context, client spanner.Client, l Pla
 				"playerUUID": p.PlayerUUID,
 			},
 		}
-		numRows, err := txn.Update(ctx, stmt)
+		numRows, err := txn.UpdateWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=item,action=UpdatePlayerBalance"})
 
 		if err != nil {
 			return err
@@ -122,7 +122,7 @@ func (p *Player) UpdateBalance(ctx context.Context, client spanner.Client, l Pla
 				"playerUUID": p.PlayerUUID,
 			},
 		}
-		iter := txn.Query(ctx, stmt)
+		iter := txn.QueryWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=item,action=GetPlayerBalance"})
 		defer iter.Stop()
 		for {
 			row, err := iter.Next()
@@ -152,13 +152,13 @@ func (p *Player) UpdateBalance(ctx context.Context, client spanner.Client, l Pla
 				"source":     l.Source,
 			},
 		}
-		_, err = txn.Update(ctx, stmt)
+		_, err = txn.UpdateWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=item,action=AddPlayerLedgerEntry"})
 		if err != nil {
 			return err
 		}
 
 		return nil
-	})
+	}, spanner.TransactionOptions{TransactionTag: "app=item,action=update_player_balance"})
 
 	if err != nil {
 		return err

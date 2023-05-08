@@ -139,7 +139,7 @@ func (p *Player) AddPlayer(ctx context.Context, client spanner.Client) error {
 			},
 		}
 
-		_, err = txn.Update(ctx, stmt)
+		_, err = txn.UpdateWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=profile,action=AddPlayer"})
 		return err
 	}, spanner.TransactionOptions{TransactionTag: "app=profile,action=insert_player"})
 
@@ -156,7 +156,8 @@ func (p *Player) AddPlayer(ctx context.Context, client spanner.Client) error {
 // retrieving the player, an empty Player is returned with the error.
 func GetPlayerByUUID(ctx context.Context, client spanner.Client, uuid string) (Player, error) {
 	row, err := client.Single().ReadRowWithOptions(ctx, "players",
-		spanner.Key{uuid}, []string{"playerUUID", "player_name", "email", "is_logged_in", "stats"}, &spanner.ReadOptions{RequestTag: "app=profile,action=GetPlayerByUuid"})
+		spanner.Key{uuid}, []string{"playerUUID", "player_name", "email", "is_logged_in", "stats"},
+		&spanner.ReadOptions{RequestTag: "app=profile,action=GetPlayerByUuid"})
 	if err != nil {
 		return Player{}, err
 	}
@@ -209,7 +210,7 @@ func PlayerLogin(ctx context.Context, client spanner.Client, email string, passw
 			},
 		}
 
-		_, err = txn.Update(ctx, stmt)
+		_, err = txn.UpdateWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=profile,action=PlayerLogin"})
 		return err
 	}, spanner.TransactionOptions{TransactionTag: "app=profile,action=player_login"})
 

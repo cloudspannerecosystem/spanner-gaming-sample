@@ -95,7 +95,7 @@ func (g Game) getGamePlayers(ctx context.Context, txn *spanner.ReadWriteTransact
 		},
 	}
 
-	iter := txn.Query(ctx, stmt)
+	iter := txn.QueryWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=matchmaking,action=GetGamePlayers"})
 	playerRows, err := readRows(iter)
 	if err != nil {
 		return []string{}, []Player{}, err

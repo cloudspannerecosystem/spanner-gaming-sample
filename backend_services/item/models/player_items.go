@@ -41,7 +41,7 @@ type PlayerItem struct {
 // This allows item prices to change over time without impacting prices of previously acquired items.
 func (pi *PlayerItem) Add(ctx context.Context, client spanner.Client) error {
 	// insert into spanner
-	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+	_, err := client.ReadWriteTransactionWithOptions(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		// Get item price at time of transaction
 		price, err := GetItemPrice(ctx, txn, pi.ItemUUID)
 
@@ -74,7 +74,7 @@ func (pi *PlayerItem) Add(ctx context.Context, client spanner.Client) error {
 		}
 
 		return nil
-	})
+	}, spanner.TransactionOptions{TransactionTag: "app=item,action=add_player_item"})
 
 	if err != nil {
 		return err
