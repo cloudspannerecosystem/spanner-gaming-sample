@@ -125,7 +125,7 @@ func (p *Player) AddPlayer(ctx context.Context, client spanner.Client) error {
 	}, Valid: true}
 
 	// insert into spanner
-	_, err = client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+	_, err = client.ReadWriteTransactionWithOptions(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		stmt := spanner.Statement{
 			SQL: `INSERT players (playerUUID, player_name, email, password_hash, created, stats) VALUES
 					(@playerUUID, @playerName, @email, @passwordHash, CURRENT_TIMESTAMP(), @pStats)
@@ -139,9 +139,9 @@ func (p *Player) AddPlayer(ctx context.Context, client spanner.Client) error {
 			},
 		}
 
-		_, err := txn.Update(ctx, stmt)
+		_, err = txn.Update(ctx, stmt)
 		return err
-	})
+	}, spanner.TransactionOptions{TransactionTag: "app=profile,action=insert_player"})
 
 	// TODO: Handle 'AlreadyExists' errors
 	if err != nil {
@@ -155,8 +155,8 @@ func (p *Player) AddPlayer(ctx context.Context, client spanner.Client) error {
 // GetPlayerByUUID returns a Player based on a provided uuid. In the event of an error
 // retrieving the player, an empty Player is returned with the error.
 func GetPlayerByUUID(ctx context.Context, client spanner.Client, uuid string) (Player, error) {
-	row, err := client.Single().ReadRow(ctx, "players",
-		spanner.Key{uuid}, []string{"playerUUID", "player_name", "email", "is_logged_in", "stats"})
+	row, err := client.Single().ReadRowWithOptions(ctx, "players",
+		spanner.Key{uuid}, []string{"playerUUID", "player_name", "email", "is_logged_in", "stats"}, &spanner.ReadOptions{RequestTag: "app=profile,action=GetPlayerByUuid"})
 	if err != nil {
 		return Player{}, err
 	}
@@ -173,9 +173,10 @@ func GetPlayerByUUID(ctx context.Context, client spanner.Client, uuid string) (P
 // PlayerLogin logs the player in provided when player email and password. Updates the
 // user login info if found. Should return an error if no player was found.
 func PlayerLogin(ctx context.Context, client spanner.Client, email string, password string) (string, error) {
-	// Get the player based on email
-	row, err := client.Single().ReadRowUsingIndex(ctx, "players", "PlayerAuthentication",
-		spanner.Key{email}, []string{"playerUUID", "email", "password_hash", "is_logged_in"})
+	// Get the player based on email,
+	row, err := client.Single().ReadRowWithOptions(ctx, "players",
+		spanner.Key{email}, []string{"playerUUID", "email", "password_hash", "is_logged_in"},
+		&spanner.ReadOptions{Index: "PlayerAuthentication", RequestTag: "app=profile,action=GetPlayerByEmail"})
 	if err != nil {
 		return "", err
 	}
@@ -198,7 +199,7 @@ func PlayerLogin(ctx context.Context, client spanner.Client, email string, passw
 	}
 
 	// If we've made it this far, update player to login
-	_, err = client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+	_, err = client.ReadWriteTransactionWithOptions(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		// Example of using DML to update a row.
 		stmt := spanner.Statement{
 			SQL: `UPDATE players SET is_logged_in=true, last_login=CURRENT_TIMESTAMP()
@@ -208,9 +209,9 @@ func PlayerLogin(ctx context.Context, client spanner.Client, email string, passw
 			},
 		}
 
-		_, err := txn.Update(ctx, stmt)
+		_, err = txn.Update(ctx, stmt)
 		return err
-	})
+	}, spanner.TransactionOptions{TransactionTag: "app=profile,action=player_login"})
 
 	if err != nil {
 		fmt.Printf("SQL Error: %s", err)
@@ -222,9 +223,7 @@ func PlayerLogin(ctx context.Context, client spanner.Client, email string, passw
 
 // PlayerLogout logs the player out when provided a player UUID. Returns an error if no player was found
 func (p *Player) PlayerLogout(ctx context.Context, client spanner.Client) error {
-	fmt.Printf("Player UUID: %s\n", p.PlayerUUID)
-
-	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+	_, err := client.ReadWriteTransactionWithOptions(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		// Example of using mutations to update a row
 		var m []*spanner.Mutation
 		pCols := []string{"playerUUID", "is_logged_in"}
@@ -235,7 +234,7 @@ func (p *Player) PlayerLogout(ctx context.Context, client spanner.Client) error 
 		}
 
 		return nil
-	})
+	}, spanner.TransactionOptions{TransactionTag: "app=profile,action=player_logout"})
 
 	if err != nil {
 		fmt.Printf("SQL Error: %s", err)
