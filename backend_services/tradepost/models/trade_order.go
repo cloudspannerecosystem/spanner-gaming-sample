@@ -101,7 +101,9 @@ func validateBuyer(b Player, o TradeOrder) bool {
 
 // getOrderDetails returns information about a trade order
 func (o *TradeOrder) getOrderDetails(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-	row, err := txn.ReadRow(ctx, "trade_orders", spanner.Key{o.OrderUUID}, []string{"lister", "playerItemUUID", "active", "expires", "list_price"})
+	row, err := txn.ReadRowWithOptions(ctx, "trade_orders", spanner.Key{o.OrderUUID},
+		[]string{"lister", "playerItemUUID", "active", "expires", "list_price"},
+		&spanner.ReadOptions{RequestTag: "app=tradepost,action=GetOrderDetails"})
 	if err != nil {
 		return err
 	}
@@ -121,7 +123,8 @@ func GetRandomOpenOrder(ctx context.Context, client spanner.Client) (TradeOrder,
 	query := fmt.Sprintf("SELECT orderUUID, lister, list_price FROM (SELECT orderUUID, lister, list_price FROM trade_orders WHERE active = True AND expires > CURRENT_TIMESTAMP()) TABLESAMPLE RESERVOIR (%d ROWS)", 1)
 	stmt := spanner.Statement{SQL: query}
 
-	iter := client.Single().Query(ctx, stmt)
+	iter := client.Single().QueryWithOptions(ctx, stmt,
+		spanner.QueryOptions{RequestTag: "app=tradepost,action=GetRandomOpenOrder"})
 
 	defer iter.Stop()
 	for {
@@ -144,7 +147,7 @@ func GetRandomOpenOrder(ctx context.Context, client spanner.Client) (TradeOrder,
 // Create adds a new trade order for an item.
 func (o *TradeOrder) Create(ctx context.Context, client spanner.Client) error {
 	// insert into spanner
-	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+	_, err := client.ReadWriteTransactionWithOptions(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		// get the Item to be listed
 		pi, err := GetPlayerItem(ctx, txn, o.Lister, o.PlayerItemUUID)
 		if err != nil {
@@ -181,7 +184,7 @@ func (o *TradeOrder) Create(ctx context.Context, client spanner.Client) error {
 		}
 
 		return nil
-	})
+	}, spanner.TransactionOptions{TransactionTag: "app=tradepost,action=create_tradeorder"})
 
 	if err != nil {
 		return err
@@ -196,7 +199,7 @@ func (o *TradeOrder) Create(ctx context.Context, client spanner.Client) error {
 // the trade price from the buyer's account and adding it to the seller's account
 func (o *TradeOrder) Buy(ctx context.Context, client spanner.Client) error {
 	// Fulfil the order
-	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+	_, err := client.ReadWriteTransactionWithOptions(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		// Get Order information
 		if err := o.getOrderDetails(ctx, txn); err != nil {
 			return err
@@ -258,7 +261,7 @@ func (o *TradeOrder) Buy(ctx context.Context, client spanner.Client) error {
 		}
 
 		return nil
-	})
+	}, spanner.TransactionOptions{TransactionTag: "app=tradepost,action=tradeorder_buy"})
 
 	if err != nil {
 		return err
@@ -267,7 +270,3 @@ func (o *TradeOrder) Buy(ctx context.Context, client spanner.Client) error {
 	// return empty error on success
 	return nil
 }
-
-// TODO: handle cancelled items. Mark order as not active, make item visible again
-
-// TODO: handle expired items. Mark order as not active, make item visible again

@@ -45,7 +45,8 @@ type PlayerLedger struct {
 func GetPlayerSession(ctx context.Context, txn *spanner.ReadWriteTransaction, playerUUID string) (string, error) {
 	var session string
 
-	row, err := txn.ReadRow(ctx, "players", spanner.Key{playerUUID}, []string{"current_game"})
+	row, err := txn.ReadRowWithOptions(ctx, "players", spanner.Key{playerUUID}, []string{"current_game"},
+		&spanner.ReadOptions{RequestTag: "app=tradepost,action=GetPlayerSession"})
 	if err != nil {
 		return "", err
 	}
@@ -74,7 +75,7 @@ func GetRandomPlayer(ctx context.Context, client spanner.Client, excludePlayerUU
 		" TABLESAMPLE RESERVOIR (%d ROWS)", excludePlayerUUID, minBalance.FloatString(2), 1)
 	stmt := spanner.Statement{SQL: query}
 
-	iter := client.Single().Query(ctx, stmt)
+	iter := client.Single().QueryWithOptions(ctx, stmt, spanner.QueryOptions{RequestTag: "app=tradepost,action=GetRandomPlayer"})
 	defer iter.Stop()
 	for {
 		row, err := iter.Next()
@@ -94,7 +95,9 @@ func GetRandomPlayer(ctx context.Context, client spanner.Client, excludePlayerUU
 
 // GetBalance returns a player's account balance
 func (p *Player) GetBalance(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-	row, err := txn.ReadRow(ctx, "players", spanner.Key{p.PlayerUUID}, []string{"account_balance", "current_game"})
+	row, err := txn.ReadRowWithOptions(ctx, "players", spanner.Key{p.PlayerUUID},
+		[]string{"account_balance", "current_game"},
+		&spanner.ReadOptions{RequestTag: "app=tradepost,action=GetPlayerBalance"})
 	if err != nil {
 		return err
 	}

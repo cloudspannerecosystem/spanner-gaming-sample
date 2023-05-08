@@ -49,7 +49,8 @@ func GetRandomPlayerItem(ctx context.Context, client spanner.Client) (PlayerItem
 		") TABLESAMPLE RESERVOIR (%d ROWS)", 1)
 	stmt := spanner.Statement{SQL: query}
 
-	iter := client.Single().Query(ctx, stmt)
+	iter := client.Single().QueryWithOptions(ctx, stmt,
+		spanner.QueryOptions{RequestTag: "app=tradepost,action=GetRandomPlayerItem"})
 	defer iter.Stop()
 	for {
 		row, err := iter.Next()
@@ -73,8 +74,9 @@ func GetRandomPlayerItem(ctx context.Context, client spanner.Client) (PlayerItem
 func GetPlayerItem(ctx context.Context, txn *spanner.ReadWriteTransaction, playerUUID string, playerItemUUID string) (PlayerItem, error) {
 	var pi PlayerItem
 
-	row, err := txn.ReadRow(ctx, "player_items", spanner.Key{playerUUID, playerItemUUID},
-		[]string{"playerItemUUID", "playerUUID", "itemUUID", "price", "acquire_time", "expires_time", "visible"})
+	row, err := txn.ReadRowWithOptions(ctx, "player_items", spanner.Key{playerUUID, playerItemUUID},
+		[]string{"playerItemUUID", "playerUUID", "itemUUID", "price", "acquire_time", "expires_time", "visible"},
+		&spanner.ReadOptions{RequestTag: "app=tradepost,action=GetPlayerItem"})
 	if err != nil {
 		return PlayerItem{}, err
 	}

@@ -35,7 +35,8 @@ type GameItem struct {
 func GetItemPrice(ctx context.Context, txn *spanner.ReadWriteTransaction, itemUUID string) (big.Rat, error) {
 	var price big.Rat
 
-	row, err := txn.ReadRow(ctx, "game_items", spanner.Key{itemUUID}, []string{"item_value"})
+	row, err := txn.ReadRowWithOptions(ctx, "game_items", spanner.Key{itemUUID}, []string{"item_value"},
+		&spanner.ReadOptions{RequestTag: "app=tradepost,action=GetItemPrice"})
 	if err != nil {
 		return price, err
 	}
@@ -50,8 +51,9 @@ func GetItemPrice(ctx context.Context, txn *spanner.ReadWriteTransaction, itemUU
 
 // GetItemByUUID returns an item when provided a valid itemUUID
 func GetItemByUUID(ctx context.Context, client spanner.Client, itemUUID string) (GameItem, error) {
-	row, err := client.Single().ReadRow(ctx, "game_items",
-		spanner.Key{itemUUID}, []string{"item_name", "item_value", "available_time", "duration"})
+	row, err := client.Single().ReadRowWithOptions(ctx, "game_items",
+		spanner.Key{itemUUID}, []string{"item_name", "item_value", "available_time", "duration"},
+		&spanner.ReadOptions{RequestTag: "app=tradepost,action=GetItemByUuid"})
 	if err != nil {
 		return GameItem{}, err
 	}
