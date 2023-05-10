@@ -71,7 +71,7 @@ func GetRandomPlayer(ctx context.Context, client spanner.Client, excludePlayerUU
 	var p Player
 
 	query := fmt.Sprintf("SELECT playerUUID, current_game, account_balance "+
-		" FROM (SELECT playerUUID, current_game, account_balance FROM players WHERE current_game IS NOT NULL AND playerUUID!='%s' AND account_balance > %s LIMIT 10000)"+
+		" FROM (SELECT playerUUID, current_game, account_balance FROM players WHERE current_game IS NOT NULL AND playerUUID!='%s' AND account_balance > %s LIMIT 100)"+
 		" TABLESAMPLE RESERVOIR (%d ROWS)", excludePlayerUUID, minBalance.FloatString(2), 1)
 	stmt := spanner.Statement{SQL: query}
 
