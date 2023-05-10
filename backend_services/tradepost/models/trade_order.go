@@ -120,7 +120,9 @@ func (o *TradeOrder) getOrderDetails(ctx context.Context, txn *spanner.ReadWrite
 func GetRandomOpenOrder(ctx context.Context, client spanner.Client) (TradeOrder, error) {
 	var order TradeOrder
 
-	query := fmt.Sprintf("SELECT orderUUID, lister, list_price FROM (SELECT orderUUID, lister, list_price FROM trade_orders WHERE active = True AND expires > CURRENT_TIMESTAMP()) TABLESAMPLE RESERVOIR (%d ROWS)", 1)
+	query := fmt.Sprintf("SELECT orderUUID, lister, list_price FROM (SELECT orderUUID, lister, list_price"+
+		" FROM trade_orders WHERE active = True AND expires > CURRENT_TIMESTAMP() LIMIT 100)"+
+		" TABLESAMPLE RESERVOIR (%d ROWS)", 1)
 	stmt := spanner.Statement{SQL: query}
 
 	iter := client.Single().QueryWithOptions(ctx, stmt,
