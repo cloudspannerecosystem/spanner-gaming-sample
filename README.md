@@ -177,7 +177,7 @@ gcloud builds submit --config=cloudbuild.yaml
 
 > **NOTE:** If the `cloudbuild.yaml` file doesn't exist in this directory, make sure to run the Terraform setup step again.
 
-For more information on running the workloads, follow [these instructions](./workloads.md).
+For more information on running the workloads, follow [these instructions](./docs/workloads.md).
 
 > **NOTE:** It will take some time time to complete the build.
 

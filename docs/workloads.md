@@ -1,12 +1,40 @@
 # Workload
+The workload generators leverage the [Locust](https://locust.io) python framework for generating load against the exposed REST APIs of the sample services.
 
-You can run these workloads either locally or on GKE.
+The workloads can be run via a web interface or the command line.
 
-Either way before the workloads can be used, first deploy the services according to the [README](../README.md).
+If using the web interface, you can point your web browser to the exposed port to set the workload's concurrency in terms of "users". Then the load runs until the test is stopped in the browser.
 
-> **NOTE:** The GKE instructions also include deploying the workloads on GKE.
+Various charts are provided by the web interface to indicate the performance of the load test.
 
-The rest of this document explains how to run the workloads locally.
+If you do not want to use the web interface, the command line options specify the user concurrency, as well as a run time. Statistics are printed on the
+command line for the test.
+
+You can run these workloads either locally or on GKE. Before the workloads can be used, first deploy the backend services according to the [README](../README.md).
+
+## GKE workloads
+Currently, only the web interface is available for workloads running on GKE.
+
+After the workloads are running, then you can use `kubectl` or the Cloud Console to get the service IPs for the website.
+
+For example, to get the profile workload, use the following command to get the *ETERNAL_IP*:
+
+```
+# The external IP is the 4th column of the output
+kubectl get services | grep profile-workload
+```
+
+> **NOTE:** If you get an error with kubectl, make sure to authenticate with gcloud according to the instructions in the main README.
+
+When you have that, open a browser to `http://{EXTERNAL_IP}:8089'. This should take you to the Locust Web UI.
+
+Fill in the information for the workload and start the workload.
+
+> **TIP:** You can use the name of the backend-service in the host field, since GKE will use DNS to resolve correctly. For example, use `http://profile` for the *profile-workload* to connect to the *profile* backend service.
+
+Do this for each workload.
+
+## Local workloads
 
 ### Workload dependencies
 
