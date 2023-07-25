@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'backend_services/**'
+      - '!backend_services/item/**'
 jobs:
   lint:
     name: Lint files
