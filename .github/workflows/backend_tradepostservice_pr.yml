@@ -1,12 +1,12 @@
 
-name: Backend Item Service code tests
+name: Backend Tradepost Service code tests
 on:
   pull_request:
     paths:
-      - 'backend_services/item/**'
+      - 'backend_services/tradepost/**'
 jobs:
   test:
-    name: Item Service Tests
+    name: Tradepost Service Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -18,11 +18,11 @@ jobs:
       - name: Lint files
         uses: golangci/golangci-lint-action@v3
         with:
-          working-directory: ./backend_services/item
+          working-directory: ./backend_services/tradepost
           args: --timeout 120s --verbose
       - name: Run unit tests
         run: |
-          make item-test
+          make tradepost-test
       - name: Run integration tests
         run: |
-          make item-test-integration
+          make tradepost-test-integration

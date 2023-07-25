@@ -5,6 +5,7 @@ on:
     paths:
       - 'backend_services/**'
       - '!backend_services/item/**'
+      - '!backend_services/tradepost/**'
 jobs:
   lint:
     name: Lint files
