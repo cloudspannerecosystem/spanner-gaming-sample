@@ -1,0 +1,28 @@
+
+name: Backend Profile Service code tests
+on:
+  pull_request:
+    paths:
+      - 'backend_services/profile/**'
+jobs:
+  test:
+    name: Profile Service Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.19.2'
+      - name: Check go version
+        run: go version
+      - name: Lint files
+        uses: golangci/golangci-lint-action@v3
+        with:
+          working-directory: ./backend_services/profile
+          args: --timeout 120s --verbose
+      - name: Run unit tests
+        run: |
+          make profile-test
+      - name: Run integration tests
+        run: |
+          make profile-test-integration
