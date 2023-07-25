@@ -1,0 +1,28 @@
+
+name: Backend Matchmaking Service code tests
+on:
+  pull_request:
+    paths:
+      - 'backend_services/matchmaking/**'
+jobs:
+  test:
+    name: Matchmaking Service Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.19.2'
+      - name: Check go version
+        run: go version
+      - name: Lint files
+        uses: golangci/golangci-lint-action@v3
+        with:
+          working-directory: ./backend_services/matchmaking
+          args: --timeout 120s --verbose
+      - name: Run unit tests
+        run: |
+          make matchmaking-test
+      - name: Run integration tests
+        run: |
+          make matchmaking-test-integration
