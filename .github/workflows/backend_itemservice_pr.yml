@@ -17,10 +17,10 @@ jobs:
     - name: Check go version
       run: go version
     - name: Lint files
-        uses: golangci/golangci-lint-action@v3
-        with:
-          working-directory: ./backend_services/item
-          args: --timeout 120s --verbose
+      uses: golangci/golangci-lint-action@v3
+      with:
+        working-directory: ./backend_services/item
+        args: --timeout 120s --verbose
     - name: Run unit tests
       run: |
         make item-test
